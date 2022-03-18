@@ -1,5 +1,7 @@
 package com.softwood.application
 
+import com.softwood.com.softwood.db.Database
+import com.softwood.com.softwood.db.com.softwood.db.Session
 import com.softwood.model.Customer
 import com.softwood.model.Site
 
@@ -10,11 +12,23 @@ import javax.persistence.Persistence
 class Application {
 
     static main (args) {
+        Database database = new Database()
+
+        database.withSession { Session sess ->
+            Customer cust = new Customer(name:"NatWest")
+
+            def id = sess.save(cust)
+            println "new cust id is $id "
+
+            println "current count of cus is : ${sess.count(Customer)}"
+        }
+        database.shutdown()
+
         EntityManagerFactory emf =
                 Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
 
         EntityManager entityManager = emf.createEntityManager()
-        entityManager.with{em ->
+        /*entityManager.with{em ->
             Customer cust = new Customer(name:"HSBC")
             Site hosite =new Site(name:"head office, canary wharf")
 
@@ -35,14 +49,13 @@ class Application {
                 }
             }
 
-        }
+        }*/
 
         entityManager.with{em ->
 
             Customer c1 = em.find (Customer, 1)
             println "read customer by id 1, $c1"
 
-            String star = '*' as char
             javax.persistence.Query query = em.createQuery("SELECT count(c) FROM  Customer c")
             long count = (long) query.getSingleResult()
             println "customer records in db $count"
