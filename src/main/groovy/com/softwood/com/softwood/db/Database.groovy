@@ -19,7 +19,7 @@ class Database {
     void withSession(Closure code, boolean autoClose=false) {
 
         if (!localSession.get()) {
-            localSession.set (new Session(emf))
+            localSession.set (new Session(this, emf))
         }
         Closure codeClone = code.clone()
         codeClone.delegate = this

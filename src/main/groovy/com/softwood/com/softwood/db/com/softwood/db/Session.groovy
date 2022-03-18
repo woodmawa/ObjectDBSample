@@ -1,5 +1,7 @@
 package com.softwood.com.softwood.db.com.softwood.db
 
+import com.softwood.com.softwood.db.Database
+
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -9,11 +11,13 @@ class Session {
 
     ThreadLocal<EntityManager> localEntityManager = new ThreadLocal()
     List<Throwable> errors = []
+    Database db
 
     EntityManagerFactory emf
     boolean openState
 
-    Session(EntityManagerFactory factory) {
+    Session(Database db, EntityManagerFactory factory) {
+        this.db = db
         this.emf = factory
         localEntityManager.set (emf.createEntityManager())
         openState = true
@@ -25,6 +29,28 @@ class Session {
     EntityManager getEntityManager() {
         localEntityManager.get()
     }
+
+    //cant find an implementation try delegating to the threadLocal entityManager
+    def methodMissing (String methodName, def args) {
+
+        def dynamicMethods =[]
+
+        def method = dynamicMethods.find { it.match(methodName) }
+        if (method){
+            Database.metaClass."$methodName" = {Object[] varArgs ->
+                method.invokeMethod(delegate, methodName, varArgs)
+            }
+            return method.invokeMethod (methodName, args)
+        } else if (localEntityManager.get().respondsTo(methodName, args))
+            localEntityManager.get().invokeMethod(methodName, args)
+        else {
+            //generate and cache
+            Database.metaClass."$methodName" = {varArgs -> println "generated $methodName was called "}
+            method.invokeMethod (methodName, args)
+        }
+        //else throw new MissingMethodException(name, delegate, args)
+    }
+
 
     void close() {
         EntityManager em
