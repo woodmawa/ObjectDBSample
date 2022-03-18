@@ -33,6 +33,11 @@ class Session {
     //cant find an implementation try delegating to the threadLocal entityManager
     def methodMissing (String methodName, def args) {
 
+        if (localEntityManager.get().respondsTo(methodName, args))
+            localEntityManager.get().invokeMethod(methodName, args)
+        else
+            throw new MissingMethodException(name, delegate, args)
+        /*
         def dynamicMethods =[]
 
         def method = dynamicMethods.find { it.match(methodName) }
@@ -49,6 +54,8 @@ class Session {
             method.invokeMethod (methodName, args)
         }
         //else throw new MissingMethodException(name, delegate, args)
+        */
+
     }
 
 
