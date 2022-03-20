@@ -70,7 +70,7 @@ class Session {
 
     def withTransaction (FlushModeType flushMode = FlushModeType.COMMIT, Closure work ) {
         errors.clear()
-        EntityTransaction transaction = new DelegatingTransaction (this)
+        EntityTransaction transaction = new TransactionDelegate (this)
         transaction.with { EntityTransaction tx ->
             try {
                 tx.begin()
@@ -88,7 +88,7 @@ class Session {
     }
 
     EntityTransaction getTransaction () {
-        new DelegatingTransaction  (this)
+        new TransactionDelegate  (this)
     }
 
     def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
