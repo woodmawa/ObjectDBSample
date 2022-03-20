@@ -68,21 +68,18 @@ class Session {
         }
     }
 
-    def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
+    def withTransaction (FlushModeType flushMode = FlushModeType.COMMIT, Closure work ) {
         errors.clear()
-        EntityManager em = localEntityManager.get()
-        em.getTransaction().with { EntityTransaction tx ->
+        EntityTransaction transaction = new DelegatingTransaction (this)
+        transaction.with { EntityTransaction tx ->
             try {
                 tx.begin()
-                //use groovy to do an each whether its a list or single record
-                records.each {rec ->
-                    em.persist(rec)
-                }
+                //call work closure with open transaction
+                work.call (em)
                 tx.commit()
-                return records.collect{it.id}
             } catch (Throwable ex) {
-                errors << ex
-                return -1
+            errors << ex
+            return -1
             } finally {
                 if (tx.isActive())
                     tx.rollback()
@@ -90,22 +87,24 @@ class Session {
         }
     }
 
+    EntityTransaction getTransaction () {
+        new DelegatingTransaction  (this)
+    }
+
+    def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
+        def result = withTransaction(flushMode = FlushModeType.COMMIT) {EntityManager em ->
+            records.each {rec ->
+                em.persist(rec)
+            }
+        }
+        return result
+
+    }
+
     void delete (records) {
-        errors.clear()
-        EntityManager em = localEntityManager.get()
-        em.getTransaction().with { EntityTransaction tx ->
-            try {
-                tx.begin()
-                //use groovy to do an each whether its a list or single record
-                records.each {
-                    em.remove(record)
-                }
-                tx.commit()
-            } catch (Throwable ex) {
-                errors << ex
-            } finally {
-                if (tx.isActive())
-                    tx.rollback()
+        withTransaction (FlushModeType.COMMIT) {EntityManager em
+            records.each {record ->
+                em.remove(record)
             }
         }
     }
