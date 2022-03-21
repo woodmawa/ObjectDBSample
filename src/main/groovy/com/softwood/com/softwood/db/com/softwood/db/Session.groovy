@@ -72,6 +72,7 @@ class Session {
     }
 
     def withTransaction (FlushModeType flushMode = FlushModeType.COMMIT, Closure work ) {
+        EntityManager em = getEntityManager()
         errors.clear()
         EntityTransaction transaction = new TransactionDelegate (this)
         transaction.with { EntityTransaction tx ->
@@ -79,6 +80,7 @@ class Session {
                 tx.begin()
                 //call work closure with open transaction
                 work.call (em)
+                em.flush()
                 tx.commit()
             } catch (Throwable ex) {
             errors << ex
@@ -104,7 +106,6 @@ class Session {
                 }
                 em.persist(rec)
             }
-            em.flush()
         }
         return result
 
@@ -115,6 +116,7 @@ class Session {
             records.each {record ->
                 em.remove(record)
             }
+            em.flush()
         }
     }
 
