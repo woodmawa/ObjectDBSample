@@ -8,6 +8,9 @@ import com.softwood.model.Site
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Persistence
+import javax.persistence.metamodel.EntityType
+import javax.persistence.metamodel.Metamodel
+import javax.persistence.metamodel.SingularAttribute
 
 class Application {
 
@@ -17,15 +20,24 @@ class Application {
         database.withNewSession {Session sess ->
             Customer c1 = sess.getEntityById(Customer, 1)
             Customer rc1 = sess.getEntityReferenceById(Customer, 1)
+            Metamodel mm = sess.getMetamodel()
+            Set sEntities = mm.getEntities()
+            //EntityType et = mm.entity(Customer) as EntityType
+            //SingularAttribute sa = et.getVersion(Customer)
             assert c1 == rc1
             println "first customer in DB is $c1, in session $sess"
         }
 
         database.withSession { Session sess ->
             Customer cust = new Customer(name:"NatWest")
+            Site branch = new Site (name:"ipswich branch")
+            branch.customer = cust
+            cust.sites << branch
 
             def id = sess.save(cust)
             println "new cust id is $id "
+
+            assert sess.isManaged(cust)
 
             println "current count of cus is : ${sess.count(Customer)} in session $sess"
         }

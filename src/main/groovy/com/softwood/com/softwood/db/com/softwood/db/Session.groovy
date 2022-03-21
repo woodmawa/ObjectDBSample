@@ -7,6 +7,8 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.FlushModeType
+import javax.persistence.Persistence
+import javax.persistence.PersistenceUtil
 
 @Slf4j
 class Session<T> {
@@ -15,6 +17,7 @@ class Session<T> {
     private List<Throwable> errors = []
     private Database db
     String name = "${getClass().simpleName}@${Integer.toHexString(System.identityHashCode(this)) }"
+    PersistenceUtil putil = Persistence.getPersistenceUtil()
 
     EntityManagerFactory emf
     boolean openState
@@ -44,6 +47,23 @@ class Session<T> {
 
     T getEntityReferenceById (Class<T> entityClass, primaryKey) {
         getEntityManager().getReference(entityClass, primaryKey)
+    }
+
+    boolean isLoaded (record) {
+        putil.isLoaded()
+    }
+
+    boolean isFieldLoaded (record, String fieldName) {
+        putil.isLoaded(record, fieldName)
+    }
+
+    //kills any uncommitted changes and resets to known state from db
+    T refresh (record) {
+        getEntityManager().refresh (record)
+    }
+
+    T detach (record) {
+        getEntityManager().detach (record)
     }
 
     //cant find an implementation try delegating to the threadLocal entityManager
@@ -119,7 +139,7 @@ class Session<T> {
             records.each {rec ->
                 if(!isManaged(rec)) {
                     log.debug ("save():  record $rec is not managed, so merge it with cache ")
-                    em.merge (rec)
+                    rec = em.merge (rec)
                 }
                 em.persist(rec)
             }
