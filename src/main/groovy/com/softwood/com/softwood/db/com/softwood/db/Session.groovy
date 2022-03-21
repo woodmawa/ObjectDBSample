@@ -99,10 +99,12 @@ class Session {
             records.each {rec ->
                 boolean isManaged = em.contains(rec)
                 if(!isManaged) {
+                    log.debug ("save():  record $rec is not managed, so merge it with cache ")
                     em.merge (rec)
                 }
                 em.persist(rec)
             }
+            em.flush()
         }
         return result
 
@@ -117,7 +119,7 @@ class Session {
     }
 
     long count (Class entityClazz) {
-        EntityManager em = localEntityManager.get()
+        EntityManager em = getEntityManager()
         javax.persistence.Query query = em.createQuery("SELECT count(r) FROM  ${entityClazz.getSimpleName()} r")
         long count = (long) query.getSingleResult()
 
