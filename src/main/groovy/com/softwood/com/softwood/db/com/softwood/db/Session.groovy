@@ -119,8 +119,10 @@ class Session<T> {
             errors << ex
             return -1
             } finally {
-                if (tx.isActive())
+                if (tx.isActive()) {
                     tx.rollback()
+                    log.debug ("withTransaction():  errors $errors, caused database rollback  ")
+                }
             }
         }
     }
