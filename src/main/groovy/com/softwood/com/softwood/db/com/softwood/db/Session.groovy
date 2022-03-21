@@ -10,6 +10,20 @@ import javax.persistence.FlushModeType
 import javax.persistence.Persistence
 import javax.persistence.PersistenceUtil
 
+/**
+ * database session in openSessionInView mode
+ *
+ * Session will hold an active entity manager per thread called on
+ *
+ * sessions can be named if required
+ *
+ * session will delegate methods to entityManager where not explicitly defined in Session
+ * otherwise it pushes it to the metaClass to try and resolve the method call
+ *
+ * @Author will woodman
+ * @Date 21-03-2022
+ */
+
 @Slf4j
 class Session<T> {
 
