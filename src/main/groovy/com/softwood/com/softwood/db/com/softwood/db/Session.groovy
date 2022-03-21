@@ -151,6 +151,10 @@ class Session<T> {
     void delete (records) {
         withTransaction (FlushModeType.COMMIT) {EntityManager em
             records.each {record ->
+                if(!isManaged(record)) {
+                    log.debug ("delete():  record $record is not managed, so merge it with cache ")
+                    record = em.merge (record)
+                }
                 em.remove(record)
             }
         }
