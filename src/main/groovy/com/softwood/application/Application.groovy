@@ -31,32 +31,11 @@ class Application {
         }
         database.shutdown()
 
+        //standalone query using native features
         EntityManagerFactory emf =
                 Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
 
         EntityManager entityManager = emf.createEntityManager()
-        /*entityManager.with{em ->
-            Customer cust = new Customer(name:"HSBC")
-            Site hosite =new Site(name:"head office, canary wharf")
-
-            cust.sites << hosite
-            hosite.customer = cust
-            em.getTransaction().with{tx ->
-                try {
-                    tx.begin()
-                    // Operations that modify the database should come here.
-                    em.persist(cust)
-                    em.persist(hosite)
-                    tx.commit()
-                    println "custId: $cust.id, and siteId: $hosite.id"
-                }
-                finally {
-                    if (tx.isActive())
-                        tx.rollback()
-                }
-            }
-
-        }*/
 
         entityManager.with{em ->
 
