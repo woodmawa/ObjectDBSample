@@ -1,17 +1,20 @@
 package com.softwood.com.softwood.db.com.softwood.db
 
 import com.softwood.com.softwood.db.Database
+import groovy.util.logging.Slf4j
 
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.FlushModeType
 
+@Slf4j
 class Session {
 
     ThreadLocal<EntityManager> localEntityManager = new ThreadLocal()
     List<Throwable> errors = []
     Database db
+    String name = "${getClass().simpleName}@${Integer.toHexString(System.identityHashCode(this)) }"
 
     EntityManagerFactory emf
     boolean openState
@@ -33,8 +36,8 @@ class Session {
     //cant find an implementation try delegating to the threadLocal entityManager
     def methodMissing (String methodName, def args) {
 
-        if (localEntityManager.get().respondsTo(methodName, args))
-            localEntityManager.get().invokeMethod(methodName, args)
+        if (getEntityManager().respondsTo(methodName, args))
+            getEntityManager().invokeMethod(methodName, args)
         else
             throw new MissingMethodException(name, delegate, args)
         /*
@@ -61,7 +64,7 @@ class Session {
 
     void close() {
         EntityManager em
-        if (em = localEntityManager.get()) {
+        if (em = getEntityManager()) {
             em.close()
             localEntityManager.remove()
             openState = false
@@ -94,6 +97,10 @@ class Session {
     def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
         def result = withTransaction(flushMode = FlushModeType.COMMIT) {EntityManager em ->
             records.each {rec ->
+                boolean isManaged = em.contains(rec)
+                if(!isManaged) {
+                    em.merge (rec)
+                }
                 em.persist(rec)
             }
         }
@@ -114,5 +121,9 @@ class Session {
         javax.persistence.Query query = em.createQuery("SELECT count(r) FROM  ${entityClazz.getSimpleName()} r")
         long count = (long) query.getSingleResult()
 
+    }
+
+    String toString () {
+        "Session (name:$name, em:${localEntityManager.get()})"
     }
 }
