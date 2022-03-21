@@ -100,11 +100,15 @@ class Session {
         new TransactionDelegate  (this)
     }
 
+    boolean isManaged (record) {
+        EntityManager em = getEntityManager()
+        em.contains (record)
+    }
+
     def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
         def result = withTransaction(flushMode = FlushModeType.COMMIT) {EntityManager em ->
             records.each {rec ->
-                boolean isManaged = em.contains(rec)
-                if(!isManaged) {
+                if(!isManaged(rec)) {
                     log.debug ("save():  record $rec is not managed, so merge it with cache ")
                     em.merge (rec)
                 }
