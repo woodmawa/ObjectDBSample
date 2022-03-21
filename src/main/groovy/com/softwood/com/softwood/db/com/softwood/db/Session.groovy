@@ -11,9 +11,9 @@ import javax.persistence.FlushModeType
 @Slf4j
 class Session {
 
-    ThreadLocal<EntityManager> localEntityManager = new ThreadLocal()
-    List<Throwable> errors = []
-    Database db
+    private ThreadLocal<EntityManager> localEntityManager = new ThreadLocal()
+    private List<Throwable> errors = []
+    private Database db
     String name = "${getClass().simpleName}@${Integer.toHexString(System.identityHashCode(this)) }"
 
     EntityManagerFactory emf
@@ -28,6 +28,10 @@ class Session {
     }
 
     boolean isOpen () {openState}
+
+    List<Throwable> getErrors() {
+        errors.asImmutable()
+    }
 
     EntityManager getEntityManager() {
         localEntityManager.get()
@@ -116,18 +120,18 @@ class Session {
             records.each {record ->
                 em.remove(record)
             }
-            em.flush()
         }
     }
 
     long count (Class entityClazz) {
         EntityManager em = getEntityManager()
+        em.flush()
         javax.persistence.Query query = em.createQuery("SELECT count(r) FROM  ${entityClazz.getSimpleName()} r")
         long count = (long) query.getSingleResult()
 
     }
 
     String toString () {
-        "Session (name:$name, em:${localEntityManager.get()})"
+        "Session (name:$name, em:${getEntityManager()})"
     }
 }
