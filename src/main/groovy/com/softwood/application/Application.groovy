@@ -14,13 +14,20 @@ class Application {
     static main (args) {
         Database database = new Database()
 
+        database.withNewSession {Session sess ->
+            Customer c1 = sess.getEntityById(Customer, 1)
+            Customer rc1 = sess.getEntityReferenceById(Customer, 1)
+            assert c1 == rc1
+            println "first customer in DB is $c1, in session $sess"
+        }
+
         database.withSession { Session sess ->
             Customer cust = new Customer(name:"NatWest")
 
             def id = sess.save(cust)
             println "new cust id is $id "
 
-            println "current count of cus is : ${sess.count(Customer)}"
+            println "current count of cus is : ${sess.count(Customer)} in session $sess"
         }
         database.shutdown()
 

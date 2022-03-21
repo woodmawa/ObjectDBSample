@@ -9,7 +9,7 @@ import javax.persistence.EntityTransaction
 import javax.persistence.FlushModeType
 
 @Slf4j
-class Session {
+class Session<T> {
 
     private ThreadLocal<EntityManager> localEntityManager = new ThreadLocal()
     private List<Throwable> errors = []
@@ -27,7 +27,8 @@ class Session {
 
     }
 
-    boolean isOpen () {openState}
+    boolean isOpen () {openState == true}
+    boolean isClosed () {openState == false}
 
     List<Throwable> getErrors() {
         errors.asImmutable()
@@ -35,6 +36,14 @@ class Session {
 
     EntityManager getEntityManager() {
         localEntityManager.get()
+    }
+
+    T getEntityById (Class<T> entityClass, primaryKey, Map properties = [:]) {
+        getEntityManager().find (entityClass, primaryKey, properties)
+    }
+
+    T getEntityReferenceById (Class<T> entityClass, primaryKey) {
+        getEntityManager().getReference(entityClass, primaryKey)
     }
 
     //cant find an implementation try delegating to the threadLocal entityManager
@@ -67,8 +76,8 @@ class Session {
 
 
     void close() {
-        EntityManager em
-        if (em = getEntityManager()) {
+        EntityManager em = getEntityManager()
+        if (em) {
             em.close()
             localEntityManager.remove()
             openState = false
@@ -136,6 +145,6 @@ class Session {
     }
 
     String toString () {
-        "Session (name:$name, em:${getEntityManager()})"
+        "Session (name:$name)"
     }
 }

@@ -16,23 +16,40 @@ class Database {
 
     }
 
-    void withSession(Closure code, boolean autoClose=false) {
-
-        if (!localSession.get()) {
+    Session getSession() {
+        if (localSession.get() == null) {
             localSession.set (new Session(this, emf))
         }
+        localSession.get()
+    }
+
+    void withSession(Closure code, boolean autoClose=false) {
+
         Closure codeClone = code.clone()
         codeClone.delegate = this
 
         //entityManager.with(codeClone)
-        codeClone(localSession.get())
+        codeClone(getSession())
 
-        if (autoClose)
-            localSession.get().close()
+        if (autoClose) {
+            getSession().close()
+            localSession.remove()
+        }
 
     }
 
+    void withNewSession(Closure code) {
 
+        Session newSession = new Session(this, emf)
+        Closure codeClone = code.clone()
+        codeClone.delegate = this
+
+        //entityManager.with(codeClone)
+        codeClone(newSession)
+
+        newSession.close()
+
+    }
 
     void shutdown () {
         emf.close()
