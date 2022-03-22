@@ -27,6 +27,12 @@ class Customer {
     @OneToMany (cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     Collection<Site> sites = []
 
+
+    //implement abstract trait method
+    static String getEntityName () {
+        "Customer"
+    }
+
     String toString() {
         "Customer [id: $id, name:$name]"
     }

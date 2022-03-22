@@ -92,7 +92,7 @@ class Session<T> {
             getEntityManager().invokeMethod(methodName, args)
         else
             //else defer to MetaClass to resolve
-            throw new MissingMethodException(name, delegate, args)
+            throw new MissingMethodException(name, this, args)
         /*
         def dynamicMethods =[]
         def method = dynamicMethods.find { it.match(methodName) }

@@ -2,6 +2,7 @@ package com.softwood.application
 
 import com.softwood.com.softwood.db.Database
 import com.softwood.com.softwood.db.Session
+import com.softwood.com.softwood.db.modelCapability.DomainEntityProxy
 import com.softwood.model.Customer
 import com.softwood.model.Site
 
@@ -35,15 +36,12 @@ class Application {
             def savedCust = sess.save(cust)
             println "new cust is $savedCust "
 
-            def domainClass = Customer.withTraits (Persistence)
-            //domainClass.session = sess
-            //def custRecs = domainClass.count()
-            boolean has = domainClass.respondsTo("hello")
+            def domainClass = new DomainEntityProxy (sess, Customer)
+            def custRecs = domainClass.count()
+            println "count of cust recs $custRecs"
+            def newCust = domainClass::new()
 
-            has
-            domainClass.hello()
-
-            assert sess.isManaged(savedCust)
+           assert sess.isManaged(savedCust)
 
             println "current count of cus is : ${sess.count(Customer)} in session $sess"
         }
