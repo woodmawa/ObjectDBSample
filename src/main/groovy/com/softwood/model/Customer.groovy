@@ -16,7 +16,7 @@ import static javax.persistence.CascadeType.*
 class Customer {
     @Id @GeneratedValue(strategy= GenerationType.IDENTITY)
     final long id
-    @Version private long version
+    @Version long version
 
     long getVersion () {
         version

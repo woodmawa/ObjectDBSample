@@ -1,6 +1,6 @@
-package com.softwood.com.softwood.db.com.softwood.db
+package com.softwood.com.softwood.db
 
-import com.softwood.com.softwood.db.Database
+
 import groovy.util.logging.Slf4j
 
 import javax.persistence.EntityManager
@@ -28,6 +28,7 @@ import javax.persistence.PersistenceUtil
 class Session<T> {
 
     private ThreadLocal<EntityManager> localEntityManager = new ThreadLocal()
+    //todo: should errors be thread local also ?
     private List<Throwable> errors = []
     private Database db
     String name = "${getClass().simpleName}@${Integer.toHexString(System.identityHashCode(this)) }"
@@ -49,6 +50,10 @@ class Session<T> {
 
     List<Throwable> getErrors() {
         errors.asImmutable()
+    }
+
+    boolean hasErrors() {
+        errors.size() > 0
     }
 
     EntityManager getEntityManager() {
@@ -86,10 +91,10 @@ class Session<T> {
         if (getEntityManager().respondsTo(methodName, args))
             getEntityManager().invokeMethod(methodName, args)
         else
+            //else defer to MetaClass to resolve
             throw new MissingMethodException(name, delegate, args)
         /*
         def dynamicMethods =[]
-
         def method = dynamicMethods.find { it.match(methodName) }
         if (method){
             Database.metaClass."$methodName" = {Object[] varArgs ->
@@ -125,13 +130,16 @@ class Session<T> {
         transaction.with { EntityTransaction tx ->
             try {
                 tx.begin()
+                assert tx.isActive(), "transaction not started"
                 //call work closure with open transaction
-                work.call (em)
-                em.flush()
+                def result = work.call (em)
+                //em.flush()
                 tx.commit()
+                return result
             } catch (Throwable ex) {
-            errors << ex
-            return -1
+                log.debug ("withTransaction():  in transaction threw error $ex, database rollback triggered ")
+                errors << ex
+                return -1
             } finally {
                 if (tx.isActive()) {
                     tx.rollback()
@@ -150,28 +158,40 @@ class Session<T> {
         em.contains (record)
     }
 
+    boolean isDetached (record) {
+        EntityManager em = getEntityManager()
+        !em.contains (record)
+    }
+
     def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
         def result = withTransaction(flushMode = FlushModeType.COMMIT) {EntityManager em ->
-            records.each {rec ->
-                if(!isManaged(rec)) {
-                    log.debug ("save():  record $rec is not managed, so merge it with cache ")
-                    rec = em.merge (rec)
+            def domainObjectList = records.collect {record ->
+                def domainRecord = record
+                if(isDetached (record)) {
+                    log.debug ("save():  record $record is not managed, so merge it with cache ")
+                    domainRecord = em.merge (record)
                 }
-                em.persist(rec)
+                em.persist(domainRecord)
+                domainRecord
             }
+            domainObjectList
         }
-        return result
+        if (result instanceof Collection && result.size() == 1)
+            result[0]
+        else
+            result
 
     }
 
     void delete (records) {
         withTransaction (FlushModeType.COMMIT) {EntityManager em
             records.each {record ->
-                if(!isManaged(record)) {
+                def domainRecord = record
+                if(isDetached(record)) {
                     log.debug ("delete():  record $record is not managed, so merge it with cache ")
-                    record = em.merge (record)
+                    domainRecord = em.merge (record)
                 }
-                em.remove(record)
+                em.remove(domainRecord)
             }
         }
     }

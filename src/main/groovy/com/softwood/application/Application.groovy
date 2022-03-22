@@ -1,16 +1,14 @@
 package com.softwood.application
 
 import com.softwood.com.softwood.db.Database
-import com.softwood.com.softwood.db.com.softwood.db.Session
+import com.softwood.com.softwood.db.Session
 import com.softwood.model.Customer
 import com.softwood.model.Site
 
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Persistence
-import javax.persistence.metamodel.EntityType
 import javax.persistence.metamodel.Metamodel
-import javax.persistence.metamodel.SingularAttribute
 
 class Application {
 
@@ -34,10 +32,10 @@ class Application {
             branch.customer = cust
             cust.sites << branch
 
-            def id = sess.save(cust)
-            println "new cust id is $id "
+            def savedCust = sess.save(cust)
+            println "new cust is $savedCust "
 
-            assert sess.isManaged(cust)
+            assert sess.isManaged(savedCust)
 
             println "current count of cus is : ${sess.count(Customer)} in session $sess"
         }
