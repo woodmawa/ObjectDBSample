@@ -40,7 +40,7 @@ SomeClass some = new SomeClass()
 DomainEntityProxy proxy  = new DomainEntityProxy (SomeClass)
 
 
-println " proxy for class ${proxy.getEntityClassName()}"
+println " proxy for class ${proxy.getEntityClassType()}"
 println "proxy record count ${proxy.count()}"
 
  Closure clos = {

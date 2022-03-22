@@ -16,18 +16,13 @@ class Application {
     static main (args) {
         Database database = new Database()
 
-        database.withNewSession {Session sess ->
-            Customer c1 = sess.getEntityById(Customer, 1)
-            Customer rc1 = sess.getEntityReferenceById(Customer, 1)
-            Metamodel mm = sess.getMetamodel()
-            Set sEntities = mm.getEntities()
-            //EntityType et = mm.entity(Customer) as EntityType
-            //SingularAttribute sa = et.getVersion(Customer)
-            assert c1 == rc1
-            println "first customer in DB is $c1, in session $sess"
-        }
-
+        long recordId
         database.withSession { Session sess ->
+            def domainClass = new DomainEntityProxy (sess, Customer)
+
+            long deleted = domainClass.deleteAll()
+            println "deleted $deleted records from ${domainClass.getClassName()}"
+
             Customer cust = new Customer(name:"NatWest")
             Site branch = new Site (name:"ipswich branch")
             branch.customer = cust
@@ -35,8 +30,8 @@ class Application {
 
             def savedCust = sess.save(cust)
             println "new cust is $savedCust "
+            recordId = savedCust.id
 
-            def domainClass = new DomainEntityProxy (sess, Customer)
             def custRecs = domainClass.count()
             println "count of cust recs $custRecs"
             def newCust = domainClass::new()
@@ -45,6 +40,19 @@ class Application {
 
             println "current count of cus is : ${sess.count(Customer)} in session $sess"
         }
+
+        database.withNewSession {Session sess ->
+            Customer c1 = sess.getEntityById(Customer, recordId)
+            Customer rc1 = sess.getEntityReferenceById(Customer, recordId)
+            Metamodel mm = sess.getMetamodel()
+            Set sEntities = mm.getEntities()
+            //EntityType et = mm.entity(Customer) as EntityType
+            //SingularAttribute sa = et.getVersion(Customer)
+            assert c1 == rc1
+            println "first customer in DB is $c1, in session $sess"
+        }
+
+
         database.shutdown()
 
         //standalone query using native features
