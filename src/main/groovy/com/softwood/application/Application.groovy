@@ -35,6 +35,14 @@ class Application {
             def savedCust = sess.save(cust)
             println "new cust is $savedCust "
 
+            def domainClass = Customer.withTraits (Persistence)
+            //domainClass.session = sess
+            //def custRecs = domainClass.count()
+            boolean has = domainClass.respondsTo("hello")
+
+            has
+            domainClass.hello()
+
             assert sess.isManaged(savedCust)
 
             println "current count of cus is : ${sess.count(Customer)} in session $sess"
