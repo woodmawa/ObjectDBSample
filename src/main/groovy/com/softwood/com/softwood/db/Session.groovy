@@ -202,11 +202,12 @@ class Session<T> {
                     domainRecord = getEntityManager().merge (record)
                 }
                 if (record.hasProperty('softDeleted') && !hardDelete) {
-                    log.debug "soft deleted $domainRecord"
+                    log.debug "delete(): soft deleted $domainRecord"
                     record.setProperty ('softDeleted', true)
                     return 1
 
                 } else {
+                    log.debug "delete(): record has no softDeleted property so hard delete $domainRecord"
                     getEntityManager().remove(domainRecord)
                     return 1
                 }
