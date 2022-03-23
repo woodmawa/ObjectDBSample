@@ -30,15 +30,13 @@ class Session<T> {
     private ThreadLocal<EntityManager> localEntityManager = new ThreadLocal()
     //todo: should errors be thread local also ?
     private List<Throwable> errors = []
-    private Database db
     String name = "${getClass().simpleName}@${Integer.toHexString(System.identityHashCode(this)) }"
     PersistenceUtil putil = Persistence.getPersistenceUtil()
 
     EntityManagerFactory emf
     boolean openState
 
-    Session(Database db, EntityManagerFactory factory) {
-        this.db = db
+    Session(EntityManagerFactory factory) {
         this.emf = factory
         localEntityManager.set (emf.createEntityManager())
         openState = true
@@ -69,7 +67,7 @@ class Session<T> {
     }
 
     boolean isLoaded (record) {
-        putil.isLoaded()
+        putil.isLoaded(record)
     }
 
     boolean isFieldLoaded (record, String fieldName) {

@@ -15,7 +15,7 @@ class Database {
 
     Session getSession() {
         if (localSession.get() == null) {
-            localSession.set (new Session(this, emf))
+            localSession.set (new Session(emf))
         }
         localSession.get()
     }
@@ -37,7 +37,7 @@ class Database {
 
     void withNewSession(Closure code) {
 
-        Session newSession = new Session(this, emf)
+        Session newSession = new Session(emf)
         Closure codeClone = code.clone()
         codeClone.delegate = this
 
@@ -51,8 +51,6 @@ class Database {
     void shutdown () {
         emf.close()
     }
-
-
 
 
 }
