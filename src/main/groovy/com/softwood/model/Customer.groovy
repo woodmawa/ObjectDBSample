@@ -27,6 +27,8 @@ class Customer {
     @OneToMany (cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     Collection<Site> sites = []
 
+    boolean softDeleted = false
+    boolean isActive () { softDeleted == false }
 
     //implement abstract trait method
     static String getEntityName () {

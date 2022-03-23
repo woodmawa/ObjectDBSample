@@ -6,21 +6,29 @@ import javax.persistence.Persistence
 
 class Database {
 
-    EntityManagerFactory emf = Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
-    ThreadLocal<Session> localSession = new ThreadLocal()
+    private static EntityManagerFactory emf = Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
+    private static ThreadLocal<Session> localSession = new ThreadLocal()
 
     Database () {
 
     }
 
-    Session getSession() {
+    static EntityManagerFactory getEmf () {
+        emf
+    }
+
+    static isOpen () {
+        emf?.isOpen()
+    }
+
+    static Session getSession() {
         if (localSession.get() == null) {
-            localSession.set (new Session(emf))
+            localSession.set (new Session())
         }
         localSession.get()
     }
 
-    void withSession(Closure code, boolean autoClose=false) {
+    static void withSession(Closure code, boolean autoClose=false) {
 
         Closure codeClone = code.clone()
         codeClone.delegate = this
@@ -35,9 +43,9 @@ class Database {
 
     }
 
-    void withNewSession(Closure code) {
+    static void withNewSession(Closure code) {
 
-        Session newSession = new Session(emf)
+        Session newSession = new Session()
         Closure codeClone = code.clone()
         codeClone.delegate = this
 
@@ -48,9 +56,16 @@ class Database {
 
     }
 
-    void shutdown () {
+    static void shutdown () {
         emf.close()
+        emf = null
     }
 
+    static Database start () {
+        if (!emf.isOpen() || emf == null) {
+            emf = Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
+        }
+        this
+    }
 
 }

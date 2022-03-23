@@ -14,13 +14,13 @@ import javax.persistence.metamodel.Metamodel
 class Application {
 
     static main (args) {
-        Database database = new Database()
+        //Database database = new Database()
 
         long recordId
-        database.withSession { Session sess ->
+        Database.withSession { Session sess ->
             def domainClass = new DomainEntityProxy (sess, Customer)
 
-            long deleted = domainClass.deleteAll()
+            long deleted = domainClass.hardDeleteAll()
             println "deleted $deleted records from ${domainClass.getClassName()}"
 
             Customer cust = new Customer(name:"NatWest")
@@ -34,14 +34,18 @@ class Application {
 
             def custRecs = domainClass.count()
             println "count of cust recs $custRecs"
-            def newCust = domainClass::newInstance()
+
+            Customer newCust = domainClass::newInstance()
+            newCust.name = "Barclays"
+            Customer savedNewCust = domainClass.save (newCust)
+            println "new Barclays is $savedNewCust "
 
            assert sess.isManaged(savedCust)
 
             println "current count of cus is : ${sess.count(Customer)} in session $sess"
         }
 
-        database.withNewSession {Session sess ->
+        Database.withNewSession {Session sess ->
             Customer c1 = sess.getEntityById(Customer, recordId)
             Customer rc1 = sess.getEntityReferenceById(Customer, recordId)
             Metamodel mm = sess.getMetamodel()
@@ -53,7 +57,7 @@ class Application {
         }
 
 
-        database.shutdown()
+        Database.shutdown()
 
         //standalone query using native features
         EntityManagerFactory emf =

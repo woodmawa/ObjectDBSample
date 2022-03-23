@@ -36,10 +36,21 @@ class Session<T> {
     EntityManagerFactory emf
     boolean openState
 
-    Session(EntityManagerFactory factory) {
-        this.emf = factory
-        localEntityManager.set (emf.createEntityManager())
-        openState = true
+    Session(boolean autoStart = false) {
+        this.emf = Database.getEmf()
+        if (autoStart) {
+            Database.start()
+            localEntityManager.set(emf.createEntityManager())
+            openState = true
+        } else if (Database.isOpen()){
+            EntityManager em = emf.createEntityManager()
+            boolean open = em.isOpen()
+            localEntityManager.set(em)
+            openState = true
+        }
+        else {
+            openState = false
+        }
 
     }
 
@@ -130,7 +141,7 @@ class Session<T> {
                 tx.begin()
                 assert tx.isActive(), "transaction not started"
                 //call work closure with open transaction
-                def result = work.call (em)
+                def result = work.call (this)
                 //em.flush()
                 tx.commit()
                 return result
@@ -162,16 +173,17 @@ class Session<T> {
     }
 
     def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
-        def result = withTransaction(flushMode = FlushModeType.COMMIT) {EntityManager em ->
+        def result = withTransaction(flushMode = FlushModeType.COMMIT) {Session session ->
             def domainObjectList = records.collect {record ->
                 def domainRecord = record
-                if(isDetached (record)) {
+                if(isDetached (record) ) {
                     log.debug ("save():  record $record is not managed, so merge it with cache ")
-                    domainRecord = em.merge (record)
+                    domainRecord = getEntityManager().merge (record)
                 }
-                em.persist(domainRecord)
+                EntityManager em = session.getEntityManager()
+                em.persist(domainRecord)  //void return ()
                 domainRecord
-            }
+             }
             domainObjectList
         }
         if (result instanceof Collection && result.size() == 1)
@@ -181,15 +193,19 @@ class Session<T> {
 
     }
 
-    void delete (records) {
-        withTransaction (FlushModeType.COMMIT) {EntityManager em
+    void delete (records, boolean hardDelete = false) {
+        withTransaction (FlushModeType.COMMIT) {Session session
             records.each {record ->
                 def domainRecord = record
                 if(isDetached(record)) {
                     log.debug ("delete():  record $record is not managed, so merge it with cache ")
-                    domainRecord = em.merge (record)
+                    domainRecord = getEntityManager().merge (record)
                 }
-                em.remove(domainRecord)
+                if (record.hasProperty('softDeleted') && !hardDelete) {
+                    log.debug "soft deleted $domainRecord"
+                    record.setProperty ('softDeleted', true)
+                } else
+                    getEntityManager().remove(domainRecord)
             }
         }
     }
@@ -197,8 +213,8 @@ class Session<T> {
     long count (Class entityClazz) {
         EntityManager em = getEntityManager()
         em.flush()
-        javax.persistence.Query query = em.createQuery("SELECT count(r) FROM  ${entityClazz.getSimpleName()} r")
-        long count = (long) query.getSingleResult()
+        javax.persistence.TypedQuery query = em.createQuery("SELECT count(r) FROM  ${entityClazz.getSimpleName()} r", Long)
+        query.getSingleResult()
 
     }
 

@@ -60,9 +60,10 @@ class DomainEntityProxy extends groovy.util.Proxy {
         String clazzString = getEntityClassType()
         javax.persistence.TypedQuery query = em.createQuery("SELECT count(r) FROM  ${clazzString} r")
         long count = (long) query.getSingleResult()
+
     }
 
-    def deleteAll () {
+    def hardDeleteAll () {
         String clazzString = getEntityClassType()
 
         session.withTransaction {
@@ -104,61 +105,14 @@ class DomainEntityProxy extends groovy.util.Proxy {
             false
     }
 
-    def withTransaction (FlushModeType flushMode = FlushModeType.COMMIT, Closure work ) {
-        EntityManager em = getEntityManager()
-        errors.clear()
-        EntityTransaction transaction = new TransactionDelegate (this)
-        transaction.with { EntityTransaction tx ->
-            try {
-                tx.begin()
-                assert tx.isActive(), "transaction not started"
-                //call work closure with open transaction
-                def result = work.call (em)
-                //em.flush()
-                tx.commit()
-                return result
-            } catch (Throwable ex) {
-                log.debug ("withTransaction():  in transaction threw error $ex, database rollback triggered ")
-                errors << ex
-                return -1
-            } finally {
-                if (tx.isActive()) {
-                    tx.rollback()
-                    log.debug ("withTransaction():  errors $errors, caused database rollback  ")
-                }
-            }
-        }
-    }
+
     def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
-        def result = withTransaction(flushMode = FlushModeType.COMMIT) {EntityManager em ->
-            def domainObjectList = records.collect {record ->
-                def domainRecord = record
-                if(isDetached (record)) {
-                    log.debug ("save():  record $record is not managed, so merge it with cache ")
-                    domainRecord = em.merge (record)
-                }
-                em.persist(domainRecord)
-                domainRecord
-            }
-            domainObjectList
-        }
-        if (result instanceof Collection && result.size() == 1)
-            result[0]
-        else
-            result
+        log.debug "proxy save():  use session.save() "
+        session.save(records)
+     }
 
-    }
-
-    void delete (records) {
-        withTransaction (FlushModeType.COMMIT) {EntityManager em
-            records.each {record ->
-                def domainRecord = record
-                if(isDetached(record)) {
-                    log.debug ("delete():  record $record is not managed, so merge it with cache ")
-                    domainRecord = em.merge (record)
-                }
-                em.remove(domainRecord)
-            }
-        }
+    long delete (records) {
+        log.debug "proxy delete():  use session.delete() "
+        session.delete(records)
     }
 }
