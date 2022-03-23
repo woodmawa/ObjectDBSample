@@ -9,6 +9,11 @@ import javax.persistence.EntityTransaction
 import javax.persistence.FlushModeType
 import javax.persistence.Persistence
 import javax.persistence.PersistenceUtil
+import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.ParameterExpression
+import javax.persistence.criteria.Root
 
 /**
  * database session in openSessionInView mode
@@ -225,6 +230,27 @@ class Session<T> {
         em.flush()
         javax.persistence.TypedQuery query = em.createQuery("SELECT count(r) FROM  ${entityClazz.getSimpleName()} r", Long)
         query.getSingleResult()
+
+    }
+
+    def criteriaQuery (Class<T> domainClass, Map params, value) {
+        EntityManager em = getEntityManager()
+        CriteriaBuilder cb = em.getCriteriaBuilder()
+        CriteriaQuery criteriaQuery = cb.createQuery(domainClass)
+        Root<T> entity = criteriaQuery.from (domainClass)
+        criteriaQuery.select(entity)
+
+        List<ParameterExpression> exprs = params.collect { propName, type ->
+            cb.parameter(type, propName)
+        }
+
+        if (exprs?[0])
+            criteriaQuery.where (cb.equal (entity.get ('name'), exprs[0]))
+
+        TypedQuery query = em.createQuery (criteriaQuery)
+        query.setParameter(exprs[0], value)
+        query.setFlushMode(FlushModeType.AUTO)
+        List<T> results = query.getResultList()
 
     }
 

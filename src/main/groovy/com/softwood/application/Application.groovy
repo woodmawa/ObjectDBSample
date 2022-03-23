@@ -40,7 +40,10 @@ class Application {
             Customer savedNewCust = domainClass.save (newCust)
             println "new Barclays is $savedNewCust "
 
-            domainClass.delete (savedNewCust)
+            //domainClass.delete (savedNewCust)
+
+            List<Customer> custList = sess.criteriaQuery(Customer, ['name':String], 'Barclays')
+            println "\t>> custList (size ${custList.size()}) returned $custList"
 
            assert sess.isManaged(savedCust)
 
