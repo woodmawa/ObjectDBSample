@@ -31,6 +31,9 @@ class Site {
 
     @Embedded GeoAddress address
 
+    boolean softDeleted = false
+    boolean isActive () { softDeleted == false }
+
     String toString() {
         "Site [id: $id, name:$name] belongs to $customer"
     }

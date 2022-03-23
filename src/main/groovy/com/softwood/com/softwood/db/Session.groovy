@@ -193,9 +193,9 @@ class Session<T> {
 
     }
 
-    void delete (records, boolean hardDelete = false) {
-        withTransaction (FlushModeType.COMMIT) {Session session
-            records.each {record ->
+    long delete (records, boolean hardDelete = false) {
+        def result = withTransaction (FlushModeType.COMMIT) {Session session
+            records.collect {record ->
                 def domainRecord = record
                 if(isDetached(record)) {
                     log.debug ("delete():  record $record is not managed, so merge it with cache ")
@@ -204,10 +204,19 @@ class Session<T> {
                 if (record.hasProperty('softDeleted') && !hardDelete) {
                     log.debug "soft deleted $domainRecord"
                     record.setProperty ('softDeleted', true)
-                } else
+                    return 1
+
+                } else {
                     getEntityManager().remove(domainRecord)
+                    return 1
+                }
             }
         }
+        if (result instanceof Collection && result.size() == 1)
+            result[0]
+        else
+            result.size()
+
     }
 
     long count (Class entityClazz) {

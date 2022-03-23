@@ -40,6 +40,8 @@ class Application {
             Customer savedNewCust = domainClass.save (newCust)
             println "new Barclays is $savedNewCust "
 
+            domainClass.delete (savedNewCust)
+
            assert sess.isManaged(savedCust)
 
             println "current count of cus is : ${sess.count(Customer)} in session $sess"
