@@ -57,6 +57,13 @@ class DomainEntityProxy extends groovy.util.Proxy {
         }
     }
 
+    def newInstance (args) {
+        if (args)
+            getAdaptee()::new (args)
+        else
+            getAdaptee()::new ()
+    }
+
     def methodMissing (String name, args) {
         if (name == 'new') {
             //return proxy for new instance of class being proxied

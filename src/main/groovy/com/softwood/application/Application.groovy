@@ -34,7 +34,7 @@ class Application {
 
             def custRecs = domainClass.count()
             println "count of cust recs $custRecs"
-            def newCust = domainClass::new()
+            def newCust = domainClass::newInstance()
 
            assert sess.isManaged(savedCust)
 
