@@ -3,6 +3,8 @@ package com.softwood.application
 import com.softwood.com.softwood.db.Database
 import com.softwood.com.softwood.db.Session
 import com.softwood.com.softwood.db.modelCapability.DomainEntityProxy
+import com.softwood.com.softwood.db.modelCapability.DynamicQuery
+import com.softwood.com.softwood.db.modelCapability.QueryBuilder
 import com.softwood.model.Customer
 import com.softwood.model.Site
 
@@ -44,6 +46,17 @@ class Application {
 
             List<Customer> custList = sess.criteriaQuery(Customer, ['name':String], 'Barclays')
             println "\t>> custList (size ${custList.size()}) returned $custList"
+
+            QueryBuilder qb = new QueryBuilder (Customer)
+            qb.distinct()
+
+            DynamicQuery query = new DynamicQuery (sess, qb)
+            List dqList = query.list()
+            println ("\t** dynamic query result $dqList")
+
+            qb.findAll {
+                hello() and "there"
+            }
 
            assert sess.isManaged(savedCust)
 

@@ -1,6 +1,6 @@
 package com.softwood.com.softwood.db
 
-
+import com.softwood.com.softwood.db.modelCapability.QueryBuilder
 import groovy.util.logging.Slf4j
 
 import javax.persistence.EntityManager
@@ -234,20 +234,23 @@ class Session<T> {
     }
 
     def criteriaQuery (Class<T> domainClass, Map params, value) {
+
         EntityManager em = getEntityManager()
         CriteriaBuilder cb = em.getCriteriaBuilder()
-        CriteriaQuery criteriaQuery = cb.createQuery(domainClass)
-        Root<T> entity = criteriaQuery.from (domainClass)
-        criteriaQuery.select(entity)
+        CriteriaQuery criteriaQueryBuilder = cb.createQuery(domainClass)
+        Root<T> entity = criteriaQueryBuilder.from (domainClass)
+        criteriaQueryBuilder.select(entity)
 
         List<ParameterExpression> exprs = params.collect { propName, type ->
             cb.parameter(type, propName)
         }
 
         if (exprs?[0])
-            criteriaQuery.where (cb.equal (entity.get ('name'), exprs[0]))
+            criteriaQueryBuilder.where (cb.equal (entity.get ('name'), exprs[0]))
 
-        TypedQuery query = em.createQuery (criteriaQuery)
+
+        TypedQuery query = em.createQuery (criteriaQueryBuilder)
+
         query.setParameter(exprs[0], value)
         query.setFlushMode(FlushModeType.AUTO)
         List<T> results = query.getResultList()

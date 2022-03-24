@@ -115,4 +115,5 @@ class DomainEntityProxy extends groovy.util.Proxy {
         log.debug "proxy delete():  use session.delete() "
         session.delete(records)
     }
+
 }
