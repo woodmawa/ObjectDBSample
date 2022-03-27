@@ -1,44 +1,71 @@
 package com.softwood.com.softwood.db
 
-import com.softwood.com.softwood.db.com.softwood.db.Session
 
-import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
 import javax.persistence.Persistence
 
 class Database {
 
-    EntityManagerFactory emf = Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
-    ThreadLocal<Session> localSession = new ThreadLocal()
+    private static EntityManagerFactory emf = Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
+    private static ThreadLocal<Session> localSession = new ThreadLocal()
 
     Database () {
 
     }
 
-    void withSession(Closure code, boolean autoClose=false) {
+    static EntityManagerFactory getEmf () {
+        emf
+    }
 
-        if (!localSession.get()) {
-            localSession.set (new Session(this, emf))
+    static isOpen () {
+        emf?.isOpen()
+    }
+
+    static Session getSession() {
+        if (localSession.get() == null) {
+            localSession.set (new Session())
         }
+        localSession.get()
+    }
+
+    static void withSession(Closure code, boolean autoClose=false) {
+
         Closure codeClone = code.clone()
         codeClone.delegate = this
 
         //entityManager.with(codeClone)
-        codeClone(localSession.get())
+        codeClone(getSession())
 
-        if (autoClose)
-            localSession.get().close()
+        if (autoClose) {
+            getSession().close()
+            localSession.remove()
+        }
 
     }
 
+    static void withNewSession(Closure code) {
 
+        Session newSession = new Session()
+        Closure codeClone = code.clone()
+        codeClone.delegate = this
 
-    void shutdown () {
+        //entityManager.with(codeClone)
+        codeClone(newSession)
+
+        newSession.close()
+
+    }
+
+    static void shutdown () {
         emf.close()
+        emf = null
     }
 
-
-
+    static Database start () {
+        if (!emf.isOpen() || emf == null) {
+            emf = Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
+        }
+        this
+    }
 
 }

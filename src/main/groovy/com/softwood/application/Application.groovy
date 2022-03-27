@@ -1,55 +1,87 @@
 package com.softwood.application
 
 import com.softwood.com.softwood.db.Database
-import com.softwood.com.softwood.db.com.softwood.db.Session
+import com.softwood.com.softwood.db.Session
+import com.softwood.com.softwood.db.modelCapability.DomainEntityProxy
+import com.softwood.com.softwood.db.modelCapability.DynamicQuery
+import com.softwood.com.softwood.db.modelCapability.QueryBuilder
 import com.softwood.model.Customer
 import com.softwood.model.Site
 
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Persistence
+import javax.persistence.metamodel.Metamodel
 
 class Application {
 
     static main (args) {
-        Database database = new Database()
+        //Database database = new Database()
 
-        database.withSession { Session sess ->
+        long recordId
+        Database.withSession { Session sess ->
+            def domainClass = new DomainEntityProxy (sess, Customer)
+
+            long deleted = domainClass.hardDeleteAll()
+            println "deleted $deleted records from ${domainClass.getClassName()}"
+
             Customer cust = new Customer(name:"NatWest")
+            Site branch = new Site (name:"ipswich branch")
+            branch.customer = cust
+            cust.sites << branch
 
-            def id = sess.save(cust)
-            println "new cust id is $id "
+            def savedCust = sess.save(cust)
+            println "new cust is $savedCust "
+            recordId = savedCust.id
 
-            println "current count of cus is : ${sess.count(Customer)}"
+            def custRecs = domainClass.count()
+            println "count of cust recs $custRecs"
+
+            Customer newCust = domainClass::newInstance()
+            newCust.name = "Barclays"
+            Customer savedNewCust = domainClass.save (newCust)
+            println "new Barclays is $savedNewCust "
+
+            //domainClass.delete (savedNewCust)
+
+            List<Customer> custList = sess.criteriaQuery(Customer, ['name':String], 'Barclays')
+            println "\t>> custList (size ${custList.size()}) returned $custList"
+
+            QueryBuilder qb = new QueryBuilder (Customer)
+            qb.distinct()
+
+            DynamicQuery query = new DynamicQuery (sess, qb)
+            List dqList = query.list()
+            println ("\t** dynamic query result $dqList")
+
+            qb.findAll {
+                hello() and "there"
+            }
+
+           assert sess.isManaged(savedCust)
+
+            println "current count of cus is : ${sess.count(Customer)} in session $sess"
         }
-        database.shutdown()
 
+        Database.withNewSession {Session sess ->
+            Customer c1 = sess.getEntityById(Customer, recordId)
+            Customer rc1 = sess.getEntityReferenceById(Customer, recordId)
+            Metamodel mm = sess.getMetamodel()
+            Set sEntities = mm.getEntities()
+            //EntityType et = mm.entity(Customer) as EntityType
+            //SingularAttribute sa = et.getVersion(Customer)
+            assert c1 == rc1
+            println "first customer in DB is $c1, in session $sess"
+        }
+
+
+        Database.shutdown()
+
+        //standalone query using native features
         EntityManagerFactory emf =
                 Persistence.createEntityManagerFactory("objectdb:myDbFile.odb")
 
         EntityManager entityManager = emf.createEntityManager()
-        /*entityManager.with{em ->
-            Customer cust = new Customer(name:"HSBC")
-            Site hosite =new Site(name:"head office, canary wharf")
-
-            cust.sites << hosite
-            hosite.customer = cust
-            em.getTransaction().with{tx ->
-                try {
-                    tx.begin()
-                    // Operations that modify the database should come here.
-                    em.persist(cust)
-                    em.persist(hosite)
-                    tx.commit()
-                    println "custId: $cust.id, and siteId: $hosite.id"
-                }
-                finally {
-                    if (tx.isActive())
-                        tx.rollback()
-                }
-            }
-
-        }*/
 
         entityManager.with{em ->
 
