@@ -1,9 +1,8 @@
 package scripts
 
 import groovy.transform.TypeChecked
-import groovy.util.Proxy
 
-class Domain {
+class DeprecatedDomain {
     String name = "William"
 
     def someWork () {
@@ -11,8 +10,8 @@ class Domain {
     }
 }
 
-trait GormTrait {
-    def where (@DelegatesTo(GormTrait) Closure closure) {
+trait DeprecatedGormTrait {
+    def where (@DelegatesTo(DeprecatedGormTrait) Closure closure) {
         println ">>from gorm trait running closure "
         Closure clos = closure.clone()
         clos.delegate = this
@@ -20,14 +19,14 @@ trait GormTrait {
         result
     }
 
-    def and (@DelegatesTo (GormTrait) expr) {
+    def and (@DelegatesTo (DeprecatedGormTrait) expr) {
         println "eval ${(expr)}"
         this
     }
 }
 
 
-class GormClass {
+class DeprecatedGormClass {
     def where (Closure closure) {  //@DelegatesTo(GormClass)
         println ">>from gorm trait running closure "
         Closure clos = closure.clone()
@@ -44,22 +43,22 @@ class GormClass {
 
 
 //get before with traits enhancement
-Domain instance = new Domain()
+DeprecatedDomain instance = new DeprecatedDomain()
 
 instance.metaClass.thingy = {-> println "thingy called  "}
 instance.metaClass.val = "any added value"
 
-Domain instance2 = new Domain()
+DeprecatedDomain instance2 = new DeprecatedDomain()
 
 List l = instance.metaClass.methods.collect {it.name}
 
-class DomainProxy extends groovy.util.Proxy {
+class DeprecatedDomainProxy extends groovy.util.Proxy {
 
-    DomainProxy (proxy) {  //@DelegatesTo (Domain)
+    DeprecatedDomainProxy(proxy) {  //@DelegatesTo (Domain)
         List origMethods = proxy.metaClass.methods.collect{it.name}
         List diff = proxy.metaClass.methods - proxy.getClass().metaClass.methods
 
-        List gormClassMM = GormClass.metaClass.methods.findAll {!(it.name.contains ("MetaClass") ) && !(it.name.contains('$get'))}
+        List gormClassMM = DeprecatedGormClass.metaClass.methods.findAll {!(it.name.contains ("MetaClass") ) && !(it.name.contains('$get'))}
         List domMM = proxy.metaClass.methods
         List diff2 = gormClassMM - domMM
 
@@ -77,8 +76,8 @@ class DomainProxy extends groovy.util.Proxy {
        emc.initialize()
         adaptee.setMetaClass(emc)
 
-        adaptee.metaClass.where = { GormClass::where }
-        adaptee.metaClass.and = {GormClass::and }
+        adaptee.metaClass.where = { DeprecatedGormClass::where }
+        adaptee.metaClass.and = {DeprecatedGormClass::and }
 
         List metaMethods = adaptee.metaClass.methods.collect{it.name}
         metaMethods
@@ -87,7 +86,7 @@ class DomainProxy extends groovy.util.Proxy {
 
     def newInstance() {
         //return an new adaptee,  enhanced proxy instance
-        adaptee::new().withTraits GormTrait
+        adaptee::new().withTraits DeprecatedGormTrait
     }
 
     @TypeChecked
@@ -104,7 +103,7 @@ class DomainProxy extends groovy.util.Proxy {
         }
     }
 
-    def where (@DelegatesTo (Domain) Closure closure) {  //
+    def where (@DelegatesTo (DeprecatedDomain) Closure closure) {  //
         //relay where call to proxy, with Gorm enhancement trait
         adaptee.where (closure.clone())
         this
@@ -126,12 +125,12 @@ instance2.metaClass.where = (Dummy::where).rehydrate(instance2 , dummy, dummy)  
 
 
 //enhance Class with some traits
-def EnhancedDomainClass = Domain.withTraits GormTrait
-Domain instance2FromEnhDomainClass = EnhancedDomainClass.newInstance()
+def EnhancedDomainClass = DeprecatedDomain.withTraits DeprecatedGormTrait
+DeprecatedDomain instance2FromEnhDomainClass = EnhancedDomainClass.newInstance()
 
-Proxy dp = new DomainProxy(instance)
+Proxy dp = new DeprecatedDomainProxy(instance)
 //instance = dp.newInstance()
-def res =instance.metaClass.respondsTo (Domain, "someWork")
+def res =instance.metaClass.respondsTo (DeprecatedDomain, "someWork")
 
 List lclassenh =  EnhancedDomainClass.metaClass.methods.collect {it.name}
 List lenhinst =  instance2FromEnhDomainClass.metaClass.methods.collect {it.name}
@@ -144,7 +143,7 @@ dp.someWork()  //proxy method call works, proxy property access doesnt work, e.g
 def name = dp.name  //proxied property access
 def val = dp.val
 
-def domInstance = instance2FromEnhDomainClass.withTraits GormTrait
+def domInstance = instance2FromEnhDomainClass.withTraits DeprecatedGormTrait
 List ldominst =  domInstance.metaClass.methods.collect {it.name}
 
 domInstance.where {println "\tin where closure "}  //works
