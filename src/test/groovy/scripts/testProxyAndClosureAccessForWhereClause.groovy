@@ -2,8 +2,6 @@ package scripts
 
 import groovy.transform.TypeChecked
 import groovy.util.Proxy
-import org.codehaus.groovy.runtime.MethodClosure
-
 
 class Domain {
     String name = "William"
@@ -13,8 +11,8 @@ class Domain {
     }
 }
 
-trait Gorm {
-    def where (@DelegatesTo(Gorm) Closure closure) {
+trait GormTrait {
+    def where (@DelegatesTo(GormTrait) Closure closure) {
         println ">>from gorm trait running closure "
         Closure clos = closure.clone()
         clos.delegate = this
@@ -22,7 +20,7 @@ trait Gorm {
         result
     }
 
-    def and (@DelegatesTo (Gorm) expr) {
+    def and (@DelegatesTo (GormTrait) expr) {
         println "eval ${(expr)}"
         this
     }
@@ -55,7 +53,7 @@ Domain instance2 = new Domain()
 
 List l = instance.metaClass.methods.collect {it.name}
 
-class DomainProxy extends Proxy {
+class DomainProxy extends groovy.util.Proxy {
 
     DomainProxy (proxy) {  //@DelegatesTo (Domain)
         List origMethods = proxy.metaClass.methods.collect{it.name}
@@ -67,7 +65,6 @@ class DomainProxy extends Proxy {
 
 
         diff
-
 
         this.adaptee = proxy  //.withTraits Gorm  //proxy and enhanced adaptee
 
@@ -90,13 +87,13 @@ class DomainProxy extends Proxy {
 
     def newInstance() {
         //return an new adaptee,  enhanced proxy instance
-        adaptee::new().withTraits Gorm
+        adaptee::new().withTraits GormTrait
     }
 
     @TypeChecked
     def getProperty ( String name) {  //@DelegatesTo (Domain)
         //force rely of properties to adaptee
-        def local = super.getAdaptee()
+        def local = getAdaptee()
          if (local.hasProperty(name)) {
             return local.metaClass.getProperty(local, name)
          } else if (name == "adaptee") {
@@ -129,7 +126,7 @@ instance2.metaClass.where = (Dummy::where).rehydrate(instance2 , dummy, dummy)  
 
 
 //enhance Class with some traits
-def EnhancedDomainClass = Domain.withTraits Gorm
+def EnhancedDomainClass = Domain.withTraits GormTrait
 Domain instance2FromEnhDomainClass = EnhancedDomainClass.newInstance()
 
 Proxy dp = new DomainProxy(instance)
@@ -147,7 +144,7 @@ dp.someWork()  //proxy method call works, proxy property access doesnt work, e.g
 def name = dp.name  //proxied property access
 def val = dp.val
 
-def domInstance = instance2FromEnhDomainClass.withTraits Gorm
+def domInstance = instance2FromEnhDomainClass.withTraits GormTrait
 List ldominst =  domInstance.metaClass.methods.collect {it.name}
 
 domInstance.where {println "\tin where closure "}  //works
