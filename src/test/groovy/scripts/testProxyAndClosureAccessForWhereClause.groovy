@@ -107,7 +107,7 @@ class DomainProxy extends Proxy {
         }
     }
 
-    def where ( Closure closure) {  //@DelegatesTo (Domain)
+    def where (@DelegatesTo (Domain) Closure closure) {  //
         //relay where call to proxy, with Gorm enhancement trait
         adaptee.where (closure.clone())
         this
