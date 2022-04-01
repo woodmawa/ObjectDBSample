@@ -27,8 +27,8 @@ trait DeprecatedGormTrait {
 
 
 class DeprecatedGormClass {
-    def where (Closure closure) {  //@DelegatesTo(GormClass)
-        println ">>from gorm trait running closure "
+    def where (@DelegatesTo (DeprecatedGormClass) Closure closure) {  //@DelegatesTo(GormClass)
+        println ">>GormClass.where() running closure "
         Closure clos = closure.clone()
         clos.delegate = this
         def result = clos()
