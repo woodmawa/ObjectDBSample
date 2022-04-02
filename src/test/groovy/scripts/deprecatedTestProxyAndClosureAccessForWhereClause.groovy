@@ -143,6 +143,7 @@ instance2.thingy()
 def EnhancedDomainClass = DeprecatedDomain.withTraits DeprecatedGormTrait
 DeprecatedDomain instance2FromEnhDomainClass = EnhancedDomainClass.newInstance()
 instance2FromEnhDomainClass.name = "inst2 from enhancedDomainClass"
+instance2FromEnhDomainClass.thingy()
 
 groovy.util.Proxy dp = new DeprecatedDomainProxy(instance)
 //instance = dp.newInstance()
