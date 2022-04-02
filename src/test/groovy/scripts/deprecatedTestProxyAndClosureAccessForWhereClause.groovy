@@ -117,16 +117,6 @@ class DeprecatedDomainProxy extends groovy.util.Proxy {
 
 }
 
-/*class Dummy {
-    def where (@DelegatesTo (Domain) Closure clos) {
-        clos()
-    }
-}
-Dummy dummy = new Dummy()
-
-instance2.metaClass.where = (Dummy::where).rehydrate(instance2 , dummy, dummy)   //augment inst2 with borrowed trait method
-*/
-
 //update the master class metaClass
 DeprecatedDomain.metaClass.thingy = {-> println "thingy called from $delegate "}
 DeprecatedDomain.metaClass.val = "any added value"
