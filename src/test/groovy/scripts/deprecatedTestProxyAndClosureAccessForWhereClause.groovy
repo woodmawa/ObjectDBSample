@@ -57,9 +57,14 @@ class DeprecatedDomainProxy extends groovy.util.Proxy {
 
     DeprecatedDomainProxy(proxy) {  //@DelegatesTo (Domain)
         List origMethods = proxy.metaClass.methods.collect{it.name}
+        MetaClass proxyMC = proxy.metaClass
+        List origMeth = proxy.metaClass.methods
+        MetaClass proxyClassMC = proxy.getClass().metaClass
+        List origClassMeth = proxy.getClass().metaClass.methods
         List diff = proxy.metaClass.methods - proxy.getClass().metaClass.methods
 
-        List gormClassMM = DeprecatedGormClass.metaClass.methods.findAll {!(it.name.contains ("MetaClass") ) && !(it.name.contains('$get'))}
+        List gormClassMM = DeprecatedGormClass.metaClass.methods
+        List gormClassMMExcludedNames = gormClassMM.findAll {!(it.name.contains ("MetaClass") ) && !(it.name.contains('$get'))}
         List domMM = proxy.metaClass.methods
         List diff2 = gormClassMM - domMM
 
@@ -118,24 +123,31 @@ class DeprecatedDomainProxy extends groovy.util.Proxy {
 }
 
 //update the master class metaClass
-DeprecatedDomain.metaClass.thingy = {-> println "thingy called from $delegate "}
+DeprecatedDomain.metaClass.classLevelThingy = {-> println "thingy called from $delegate "}
 DeprecatedDomain.metaClass.val = "any added value"
 
 DeprecatedDomain instance = new DeprecatedDomain(name:"instance")
+instance.metaClass.perInstanceThingy = {-> println "per instance thingy called from $delegate "}
 
 List l = instance.metaClass.methods.collect {it.name}
-instance.thingy()
+instance.classLevelThingy()
+instance.perInstanceThingy()
 
 DeprecatedDomain instance2 = new DeprecatedDomain(name:"instance2")
-instance2.thingy()
+instance2.metaClass.perInstanceThingy = {-> println "per instance thingy called from $delegate "}
+instance2.classLevelThingy()
+instance2.perInstanceThingy()
 
 //enhance Class with some traits
 def EnhancedDomainClass = DeprecatedDomain.withTraits DeprecatedGormTrait
 DeprecatedDomain instance2FromEnhDomainClass = EnhancedDomainClass.newInstance()
 instance2FromEnhDomainClass.name = "inst2 from enhancedDomainClass"
-instance2FromEnhDomainClass.thingy()
+instance2FromEnhDomainClass.metaClass.perInstanceThingy = {-> println "per instance thingy called from $delegate "}
+instance2FromEnhDomainClass.classLevelThingy()
+instance2FromEnhDomainClass.perInstanceThingy()
 
-groovy.util.Proxy dp = new DeprecatedDomainProxy(instance)
+DeprecatedDomain instance3 = new DeprecatedDomain(name:"instance3")
+groovy.util.Proxy dp = new DeprecatedDomainProxy(instance3)
 //instance = dp.newInstance()
 def res =instance.metaClass.respondsTo (DeprecatedDomain, "someWork")
 
@@ -159,13 +171,14 @@ EnhancedDomainClass.where {println "\tenh domain class, in where closure"}  //av
 
 List ldpproxy =  dp.adaptee.getMetaClass().getMethods().collect {it.name}
 
-dp.adaptee.thingy() // {println "hello in ldpproxy "}
+dp.adaptee.classLevelThingy() // {println "hello in ldpproxy "}
 println "val from dp " + dp.adaptee.val
 
 def whereResult = dp.where {
-    boolean result = name == 'instance'
+    boolean result = name == 'instance3'
     someWork()
-    thingy()
+    classLevelThingy()
+    //perInstanceThingy()
     println val
     and (10)  //uses gorm class owners and
     println "\tgorm adapted proxy in dp.where() with closure context name is $name, own:$owner delegate:$delegate"
@@ -179,7 +192,8 @@ println "\n\t now setup dp2 from instance2 and try \n"
 DeprecatedDomainProxy dp2 = new DeprecatedDomainProxy(instance2FromEnhDomainClass)
 whereResult = dp2.where {
     someWork()
-    thingy()    //from adjusted metaClass change on DomainClass
+    classLevelThingy()    //from adjusted metaClass change on DomainClass
+    perInstanceThingy()
     println val
     and (10)  //uses gorm class owners and
     println "\tgorm adapted proxy in dp2.where() with closure context name is $name, own:$owner delegate:$delegate"
