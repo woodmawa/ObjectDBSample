@@ -165,7 +165,7 @@ List ldominst =  domInstance.metaClass.methods.collect {it.name}
 
 domInstance.where {println "\tin where closure "}  //works
 EnhancedDomainClass.where {println "\tenh domain class, in where closure"}  //available on enhanced class, but no on instances from it
-//instance2FromEnhDomainClass.where {println "\t "} will fail
+//instance2FromEnhDomainClass.where {println "\tinstance of enh domain class, in where closure"}
 
 List ldpproxy =  dp.adaptee.getMetaClass().getMethods().collect {it.name}
 
