@@ -24,7 +24,7 @@ trait DeprecatedGormTrait {
         result
     }
 
-    def and (@DelegatesTo (DeprecatedGormTrait) expr) {
+    def and ( expr) {
         println "gromTrait and(): eval ${(expr)}"
         this
     }
@@ -126,18 +126,18 @@ Dummy dummy = new Dummy()
 
 instance2.metaClass.where = (Dummy::where).rehydrate(instance2 , dummy, dummy)   //augment inst2 with borrowed trait method
 */
-//instance2.where { println "instance 2 with borrowed trait method "}
 
-//get before with traits enhancement
+//update the master class metaClass
+DeprecatedDomain.metaClass.thingy = {-> println "thingy called from $delegate "}
+DeprecatedDomain.metaClass.val = "any added value"
+
 DeprecatedDomain instance = new DeprecatedDomain(name:"instance")
-
-instance.metaClass.thingy = {-> println "thingy called  "}
-instance.metaClass.val = "any added value"
-
-DeprecatedDomain instance2 = new DeprecatedDomain(name:"instance2")
 
 List l = instance.metaClass.methods.collect {it.name}
 instance.thingy()
+
+DeprecatedDomain instance2 = new DeprecatedDomain(name:"instance2")
+instance2.thingy()
 
 //enhance Class with some traits
 def EnhancedDomainClass = DeprecatedDomain.withTraits DeprecatedGormTrait
