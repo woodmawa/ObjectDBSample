@@ -1,6 +1,7 @@
 package scripts
 
 import groovy.transform.TypeChecked
+import org.codehaus.groovy.reflection.CachedClass
 import org.codehaus.groovy.runtime.MethodClosure
 
 class DeprecatedDomain {
@@ -54,19 +55,18 @@ class DeprecatedDomainProxy extends groovy.util.Proxy {
 
     //create instance for rehydration purposes
     static DeprecatedGormClass gorm = new DeprecatedGormClass()
+    static DeprecatedGormClass getGorm () {gorm }
 
     DeprecatedDomainProxy(proxy) {  //@DelegatesTo (Domain)
         List origMethods = proxy.metaClass.methods.collect{it.name}
-        MetaClass proxyMC = proxy.metaClass
-        List origMeth = proxy.metaClass.methods
-        MetaClass proxyClassMC = proxy.getClass().metaClass
-        List origClassMeth = proxy.getClass().metaClass.methods
+
+        //see if any additions were made to per instance metaClass
         List diff = proxy.metaClass.methods - proxy.getClass().metaClass.methods
 
         List gormClassMM = DeprecatedGormClass.metaClass.methods
-        List gormClassMMExcludedNames = gormClassMM.findAll {!(it.name.contains ("MetaClass") ) && !(it.name.contains('$get'))}
+        List gormClassMMExcludedNames = gormClassMM.findAll {!(it.name.contains ("MetaClass") || it.name.contains('$get') || it.name == 'toString' )}
         List domMM = proxy.metaClass.methods
-        List diff2 = gormClassMM - domMM
+        List diff2 = gormClassMMExcludedNames - domMM
 
 
         diff
@@ -76,14 +76,19 @@ class DeprecatedDomainProxy extends groovy.util.Proxy {
         //withTraits doesnt transfer any meta methods from proxy.metaClass - so do this now
         ExpandoMetaClass emc = new ExpandoMetaClass(adaptee.getClass(),true, true)
         diff.each {
+            println "\t domain proxy constructor() is adding meta method $it.name to emc"
             emc.registerInstanceMethod(it)}
-        //diff2.each {it.setMetaClass(emc)
-            //emc.registerInstanceMethod(it) }  //add in the GormClass metaMethods
+        diff2.each {
+            println "\t\t domain proxy constructor() is adding gormClass meta method $it.name to emc"
+            Closure closRef = DeprecatedGormClass::"$it.name"
+            closRef = closRef.rehydrate(proxy, getGorm(),null)
+            emc.registerInstanceMethod(it.name, closRef)
+        }  //add in the GormClass metaMethods
         emc.initialize()
         adaptee.setMetaClass(emc)
 
-        List metaMethods = adaptee.metaClass.methods.collect{it.name}
-        metaMethods
+        List finalMetaMethods = adaptee.metaClass.methods.collect{it.name}
+        finalMetaMethods
 
     }
 
@@ -123,7 +128,7 @@ class DeprecatedDomainProxy extends groovy.util.Proxy {
 }
 
 //update the master class metaClass
-DeprecatedDomain.metaClass.classLevelThingy = {-> println "thingy called from $delegate "}
+DeprecatedDomain.metaClass.classLevelThingy = {-> println "class level thingy() called from $delegate "}
 DeprecatedDomain.metaClass.val = "any added value"
 
 DeprecatedDomain instance = new DeprecatedDomain(name:"instance")
@@ -133,22 +138,24 @@ List l = instance.metaClass.methods.collect {it.name}
 instance.classLevelThingy()
 instance.perInstanceThingy()
 
-DeprecatedDomain instance2 = new DeprecatedDomain(name:"instance2")
-instance2.metaClass.perInstanceThingy = {-> println "per instance thingy called from $delegate "}
-instance2.classLevelThingy()
-instance2.perInstanceThingy()
+DeprecatedDomain instance1 = new DeprecatedDomain(name:"instance1")
+instance1.metaClass.perInstanceThingy = {-> println "per instance thingy() called from $delegate "}
+instance1.classLevelThingy()
+instance1.perInstanceThingy()
 
-//enhance Class with some traits
+//enhance Class with some traits, should still have class level thingy()
+println "\n -- Enhanced domain class using GormTrait and create inst2 from enh domain class --"
 def EnhancedDomainClass = DeprecatedDomain.withTraits DeprecatedGormTrait
 DeprecatedDomain instance2FromEnhDomainClass = EnhancedDomainClass.newInstance()
 instance2FromEnhDomainClass.name = "inst2 from enhancedDomainClass"
-instance2FromEnhDomainClass.metaClass.perInstanceThingy = {-> println "per instance thingy called from $delegate "}
+instance2FromEnhDomainClass.metaClass.perInstanceThingy = {-> println "per instance thingy() called from $delegate "}
+
 instance2FromEnhDomainClass.classLevelThingy()
 instance2FromEnhDomainClass.perInstanceThingy()
 
+println "\n  -- now create proxy from instance3  --"
 DeprecatedDomain instance3 = new DeprecatedDomain(name:"instance3")
 groovy.util.Proxy dp = new DeprecatedDomainProxy(instance3)
-//instance = dp.newInstance()
 def res =instance.metaClass.respondsTo (DeprecatedDomain, "someWork")
 
 List lclassenh =  EnhancedDomainClass.metaClass.methods.collect {it.name}
@@ -178,7 +185,7 @@ def whereResult = dp.where {
     boolean result = name == 'instance3'
     someWork()
     classLevelThingy()
-    //perInstanceThingy()
+    //perInstanceThingy() - not declared on instance3
     println val
     and (10)  //uses gorm class owners and
     println "\tgorm adapted proxy in dp.where() with closure context name is $name, own:$owner delegate:$delegate"
@@ -187,7 +194,7 @@ def whereResult = dp.where {
 
 println "-> proxies where(Closure) call  returned $whereResult"
 
-println "\n\t now setup dp2 from instance2 and try \n"
+println "\n -- now setup proxy dp2 from 'enh domain class instance2' and try that  \n"
 
 DeprecatedDomainProxy dp2 = new DeprecatedDomainProxy(instance2FromEnhDomainClass)
 whereResult = dp2.where {
