@@ -53,7 +53,7 @@ class Database {
         def result = codeClone(newSession)
 
         newSession.close()
-        result 
+        result
 
     }
 

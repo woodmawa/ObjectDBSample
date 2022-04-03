@@ -23,7 +23,7 @@ trait GormTrait {
     //traits name instead
     def getName() {
         if ($delegate.hasProperty ('name')) {
-            println ">>get delegate name, [" + $delegate.'name' + "]"
+            println ">>get delegate name, [" + getProxyTarget().'name' + "]"
             $delegate.'name'
         }
         else {
@@ -34,7 +34,7 @@ trait GormTrait {
     }
 
     void setName(String nm) {
-        if ($delegate.'name') {
+        if (getProxyTarget().'name') {
             println ">>set delegate name"
             $delegate.name= nm
             name = nm
@@ -51,17 +51,17 @@ trait GormTrait {
         def saveResult = Database.withSession { Session session ->
             if (status == "new")
                 status = "attached"
-            println ">> saving $id " + $delegate.name
+            println ">> saving $id " + getProxyTarget().name
 
             //in the trait we have to save the $delegate as this is the class known to the database by its annotations
-            session.save ($delegate)
+            session.save (getProxyTarget())
         }
         saveResult
     }
 
     void delete () {
         Database.withSession { Session session ->
-            def deletedObject = session.delete($delegate)
+            def deletedObject = session.delete(getProxyTarget())
             status = "soft deleted"
         }
     }
@@ -70,7 +70,7 @@ trait GormTrait {
         Closure constraint = closure.clone()
 
         def inTraitThisIs = this  //the proxy
-        def inTraitDelegateIs = this.$delegate //is the actual original class instance
+        def inTraitDelegateIs = getProxyTarget() //is the actual original class instance
 
         def values = Database.db.values().toList()
         List matched = []
