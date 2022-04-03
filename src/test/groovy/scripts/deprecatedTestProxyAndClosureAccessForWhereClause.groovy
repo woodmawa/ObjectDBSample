@@ -41,7 +41,7 @@ class DeprecatedGormClass {
         result
     }
 
-    def and ( expr) {  //@DelegatesTo (GormClass)
+    static def and ( expr) {  //@DelegatesTo (GormClass)
         println "GormClass.and(): eval ${expr}"
         this
     }
@@ -68,9 +68,6 @@ class DeprecatedDomainProxy extends groovy.util.Proxy {
         List domMM = proxy.metaClass.methods
         List diff2 = gormClassMMExcludedNames - domMM
 
-
-        diff
-
         this.adaptee = proxy  //.withTraits Gorm  //proxy and enhanced adaptee
 
         //withTraits doesnt transfer any meta methods from proxy.metaClass - so do this now
@@ -79,10 +76,15 @@ class DeprecatedDomainProxy extends groovy.util.Proxy {
             println "\t domain proxy constructor() is adding meta method $it.name to emc"
             emc.registerInstanceMethod(it)}
         diff2.each {
-            println "\t\t domain proxy constructor() is adding gormClass meta method $it.name to emc"
             Closure closRef = DeprecatedGormClass::"$it.name"
             closRef = closRef.rehydrate(proxy, getGorm(),null)
-            emc.registerInstanceMethod(it.name, closRef)
+            if (it.isStatic()) {
+                println "\t\t domain proxy constructor() is adding gormClass static meta method $it.name to emc"
+                emc.registerStaticMethod (it.name, closRef)
+            } else {
+                println "\t\t domain proxy constructor() is adding gormClass meta method $it.name to emc"
+                emc.registerInstanceMethod(it.name, closRef)
+            }
         }  //add in the GormClass metaMethods
         emc.initialize()
         adaptee.setMetaClass(emc)

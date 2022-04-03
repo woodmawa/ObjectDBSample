@@ -1,4 +1,4 @@
-package com.softwood.com.softwood.db
+package com.softwood.db
 
 
 import javax.persistence.EntityManagerFactory
@@ -28,31 +28,32 @@ class Database {
         localSession.get()
     }
 
-    static void withSession(Closure code, boolean autoClose=false) {
+    static def withSession(Closure code, boolean autoClose=false) {
 
         Closure codeClone = code.clone()
         codeClone.delegate = this
 
         //entityManager.with(codeClone)
-        codeClone(getSession())
+        def result = codeClone(getSession())
 
         if (autoClose) {
             getSession().close()
             localSession.remove()
         }
-
+        result
     }
 
-    static void withNewSession(Closure code) {
+    static def withNewSession(Closure code) {
 
         Session newSession = new Session()
         Closure codeClone = code.clone()
         codeClone.delegate = this
 
         //entityManager.with(codeClone)
-        codeClone(newSession)
+        def result = codeClone(newSession)
 
         newSession.close()
+        result 
 
     }
 

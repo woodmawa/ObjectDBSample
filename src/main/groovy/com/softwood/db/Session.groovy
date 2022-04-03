@@ -1,6 +1,6 @@
-package com.softwood.com.softwood.db
+package com.softwood.db
 
-import com.softwood.com.softwood.db.modelCapability.QueryBuilder
+
 import groovy.util.logging.Slf4j
 
 import javax.persistence.EntityManager

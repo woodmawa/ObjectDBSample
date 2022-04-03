@@ -1,11 +1,9 @@
-package com.softwood.com.softwood.db.modelCapability
+package com.softwood.db.modelCapability
 
-import com.softwood.com.softwood.db.Session
-import com.softwood.com.softwood.db.TransactionDelegate
+import com.softwood.db.Session
 import groovy.util.logging.Slf4j
 
 import javax.persistence.EntityManager
-import javax.persistence.EntityTransaction
 import javax.persistence.FlushModeType
 import javax.persistence.Persistence
 import javax.persistence.PersistenceUtil
@@ -21,7 +19,7 @@ class DomainEntityProxy extends groovy.util.Proxy {
     Session session
     private String proxyTypeName
     private Class proxyType
-    PersistenceUtil putil = Persistence.getPersistenceUtil()
+    PersistenceUtil persistenceUtil = Persistence.getPersistenceUtil()
 
 
     String getEntityClassType() {
@@ -93,14 +91,14 @@ class DomainEntityProxy extends groovy.util.Proxy {
 
     boolean isLoaded () {
         if (proxyTypeName == DomainProxyType.Instance)
-            putil.isLoaded(adaptee)
+            persistenceUtil.isLoaded(adaptee)
         else
             false
     }
 
     boolean isFieldLoaded (String fieldName) {
         if (proxyTypeName == DomainProxyType.Instance)
-            putil.isLoaded(adaptee, fieldName)
+            persistenceUtil.isLoaded(adaptee, fieldName)
         else
             false
     }

@@ -1,6 +1,6 @@
-package com.softwood.com.softwood.db.modelCapability
+package com.softwood.db.modelCapability
 
-import com.softwood.com.softwood.db.Database
+import com.softwood.db.Database
 
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery

@@ -1,6 +1,6 @@
 package scripts
 
-import com.softwood.com.softwood.db.modelCapability.DomainEntityProxy
+import com.softwood.db.modelCapability.DomainEntityProxy
 import com.softwood.model.Customer
 
 trait MyStaticTraits {

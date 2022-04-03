@@ -1,6 +1,5 @@
-package com.softwood.com.softwood.db
+package com.softwood.db
 
-import com.softwood.com.softwood.db.Session
 
 import javax.persistence.EntityManager
 import javax.persistence.EntityTransaction

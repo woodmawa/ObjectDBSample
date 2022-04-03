@@ -1,6 +1,6 @@
-package com.softwood.com.softwood.db.modelCapability
+package com.softwood.db.modelCapability
 
-import com.softwood.com.softwood.db.Session
+import com.softwood.db.Session
 
 import javax.persistence.TypedQuery
 

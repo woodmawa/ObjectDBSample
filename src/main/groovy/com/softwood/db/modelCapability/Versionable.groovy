@@ -1,4 +1,4 @@
-package com.softwood.com.softwood.db.modelCapability
+package com.softwood.db.modelCapability
 
 import javax.persistence.Version
 
