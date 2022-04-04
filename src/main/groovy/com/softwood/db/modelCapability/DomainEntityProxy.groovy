@@ -21,9 +21,9 @@ class DomainEntityProxy extends groovy.util.Proxy {
     private Class proxyType
     PersistenceUtil persistenceUtil = Persistence.getPersistenceUtil()
 
-    static GormClass gormTemplate = new GormClass()
+    private static GormClass gormTemplate = new GormClass()
 
-    static GormClass getGormTemplate () {
+    private static GormClass getGormTemplate () {
         gormTemplate
     }
 
@@ -52,10 +52,9 @@ class DomainEntityProxy extends groovy.util.Proxy {
     }
 
     private def enhanceDomainClass (clazz) {
-        //todo - needs to be cleverer
         if (clazz.hasProperty ("isGormEnhanced") && clazz.isGormEnhanced() ) {
             //already enhanced
-            return null
+            return clazz
         }
 
         List proxyClassMetaMethods = proxyType.metaClass.methods
@@ -86,12 +85,17 @@ class DomainEntityProxy extends groovy.util.Proxy {
     }
 
     private def enhanceInstanceMetaClass(proxy) {
+        if (proxy.hasProperty ("isGormEnhanced") && proxy.isGormEnhanced() ) {
+            //already enhanced
+            return proxy
+        }
+
         List proxyClassMetaMethods = proxy.getClass().metaClass.methods
         List proxyInstanceMetaMethods = proxy.metaClass.methods
         List<MetaMethod> diff = proxyInstanceMetaMethods - proxyClassMetaMethods
 
         List gormTemplateMetaMethods = getGormTemplate().metaClass.methods.findAll{
-            //exclude certain methods from enhancement
+            //exclude certain methods from enhancement process
             !(it.name.contains('$getLookup') ||
                     it.name.contains ("MetaClass") ||
                     it.name.contains ("toString") ||
@@ -108,12 +112,13 @@ class DomainEntityProxy extends groovy.util.Proxy {
             closRef = closRef.rehydrate(proxy, getGormTemplate(), null)
             if (it.isStatic()) {
                 //log.debug "adding gorm static method '$it.name()' to proxy metaClass"
-                emc.registerStaticMethod(closRef)
+                emc.registerStaticMethod(it.name, closRef)
             } else {
                 //log.debug "adding gorm method '$it.name()' to proxy metaClass"
-                emc.registerInstanceMethod(closRef)
+                emc.registerInstanceMethod(it.name, closRef)
             }
         }
+
         emc.isGormEnhanced = true //added property saying we augmented the metaClass
         emc.initialize()
         proxy.setMetaClass (emc)
