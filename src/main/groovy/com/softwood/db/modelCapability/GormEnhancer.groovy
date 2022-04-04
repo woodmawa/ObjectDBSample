@@ -44,7 +44,7 @@ class GormEnhancer {
             }
         }
 
-        emc.isGormEnhanced = {true} //added property saying we augmented the metaClass
+        emc.registerStaticMethod("isGormEnhanced", {true})  //added property saying we augmented the metaClass
         emc.initialize()
         domainClazz.setMetaClass (emc)
         domainClazz
