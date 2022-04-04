@@ -21,6 +21,11 @@ class DomainEntityProxy extends groovy.util.Proxy {
     private Class proxyType
     PersistenceUtil persistenceUtil = Persistence.getPersistenceUtil()
 
+    static GormClass gormTemplate = new GormClass()
+
+    static GormClass getGormTemplate () {
+        gormTemplate
+    }
 
     String getEntityClassType() {
         className
@@ -31,17 +36,87 @@ class DomainEntityProxy extends groovy.util.Proxy {
         if (adaptee instanceof Class) {
             className = adaptee.simpleName
             proxyTypeName = DomainProxyType.Class
-            proxyType = adaptee
+            proxyType = adaptee as Class
+            enhanceDomainClass (proxyType)
         }
         else {
             className = adaptee.getClass().getSimpleName()  //its an instance
             proxyTypeName = DomainProxyType.Instance
             proxyType = adaptee.getClass()
+            enhanceInstanceMetaClass (adaptee)
 
         }
 
         wrap (adaptee)
 
+    }
+
+    private def enhanceDomainClass (clazz) {
+        //todo - needs to be cleverer
+        if (clazz.hasProperty ("isGormEnhanced") && clazz.isGormEnhanced() ) {
+            //already enhanced
+            return null
+        }
+
+        List proxyClassMetaMethods = proxyType.metaClass.methods
+        List gormTemplateMetaMethods = getGormTemplate().metaClass.methods.findAll{
+            //exclude certain methods from enhancement
+            !(it.name.contains('$getLookup') ||
+                    it.name.contains ("MetaClass") ||
+                    it.name.contains ("toString") ||
+                    it.name.contains ("GormMethods")
+            )
+        }
+
+        List diff2 = gormTemplateMetaMethods - proxyClassMetaMethods
+        ExpandoMetaClass emc = new ExpandoMetaClass (proxyType, true, true)
+
+        diff2.each {
+            if (it.isStatic()) {
+                Closure closRef = GormClass::"$it.name"
+                closRef = closRef.rehydrate(proxyType, getGormTemplate(), null)
+                //log.debug "adding gorm static method '$it.name()' to domain class $clazz metaClass"
+                emc.registerStaticMethod(it.name, closRef)
+            }
+        }
+
+        emc.isGormEnhanced = true //added property saying we augmented the metaClass
+        emc.initialize()
+        clazz.setMetaClass (emc)
+    }
+
+    private def enhanceInstanceMetaClass(proxy) {
+        List proxyClassMetaMethods = proxy.getClass().metaClass.methods
+        List proxyInstanceMetaMethods = proxy.metaClass.methods
+        List<MetaMethod> diff = proxyInstanceMetaMethods - proxyClassMetaMethods
+
+        List gormTemplateMetaMethods = getGormTemplate().metaClass.methods.findAll{
+            //exclude certain methods from enhancement
+            !(it.name.contains('$getLookup') ||
+                    it.name.contains ("MetaClass") ||
+                    it.name.contains ("toString") ||
+                    it.name.contains ("GormMethods")
+            )
+        }
+
+        List diff2 = gormTemplateMetaMethods - proxyInstanceMetaMethods
+
+        ExpandoMetaClass emc = new ExpandoMetaClass (proxyType, true, true)
+        //add GormClass methods
+        diff2.each {
+            Closure closRef = GormClass::"$it.name"
+            closRef = closRef.rehydrate(proxy, getGormTemplate(), null)
+            if (it.isStatic()) {
+                //log.debug "adding gorm static method '$it.name()' to proxy metaClass"
+                emc.registerStaticMethod(closRef)
+            } else {
+                //log.debug "adding gorm method '$it.name()' to proxy metaClass"
+                emc.registerInstanceMethod(closRef)
+            }
+        }
+        emc.isGormEnhanced = true //added property saying we augmented the metaClass
+        emc.initialize()
+        proxy.setMetaClass (emc)
     }
 
     boolean isClass () {
@@ -51,6 +126,7 @@ class DomainEntityProxy extends groovy.util.Proxy {
     boolean isInstance () {
         proxyTypeName == DomainProxyType.Instance
     }
+
 
     long count () {
         EntityManager em = session.getEntityManager()
@@ -68,6 +144,8 @@ class DomainEntityProxy extends groovy.util.Proxy {
             session.getEntityManager().createQuery("DELETE FROM ${clazzString}").executeUpdate() as long
         }
     }
+
+
 
     def newInstance (args) {
         if (args)
@@ -104,14 +182,14 @@ class DomainEntityProxy extends groovy.util.Proxy {
     }
 
 
-    def save (records, FlushModeType flushMode = FlushModeType.COMMIT) {
+    def save (FlushModeType flushMode = FlushModeType.COMMIT) {
         log.debug "proxy save():  use session.save() "
-        session.save(records)
+        session.save(adaptee)
      }
 
-    long delete (records) {
+    long delete (FlushModeType flushMode = FlushModeType.COMMIT) {
         log.debug "proxy delete():  use session.delete() "
-        session.delete(records)
+        session.delete(adaptee)
     }
 
 }

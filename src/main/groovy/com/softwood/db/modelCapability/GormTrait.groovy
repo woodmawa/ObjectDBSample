@@ -22,9 +22,9 @@ trait GormTrait {
     //so we check the delegate first and if it has name we return that one - else we use the
     //traits name instead
     def getName() {
-        if ($delegate.hasProperty ('name')) {
+        if (getProxyTarget().hasProperty ('name')) {
             println ">>get delegate name, [" + getProxyTarget().'name' + "]"
-            $delegate.'name'
+            getProxyTarget().'name'
         }
         else {
             println ">>delegate instance doesnt have name, use the traits  [$name]"
