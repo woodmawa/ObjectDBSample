@@ -31,7 +31,7 @@ class Customer {
     boolean isActive () { softDeleted == false }
 
     //implement abstract trait method
-    static String getEntityName () {
+    static String getEntityClassName () {
         "Customer"
     }
 

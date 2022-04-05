@@ -1,5 +1,8 @@
 package com.softwood.db.modelCapability
 
+import groovy.util.logging.Slf4j
+
+@Slf4j
 class GormEnhancer {
     private static GormClass gormTemplate = new GormClass()
 
@@ -16,7 +19,7 @@ class GormEnhancer {
     }
 
 
-    private static def enhanceDomainClass (domainClazz) {
+    private static def enhanceDomainClass (Class domainClazz) {
         if (domainClazz.hasProperty ("isGormEnhanced") && domainClazz.isGormEnhanced() ) {
             //already enhanced
             return domainClazz
@@ -26,9 +29,11 @@ class GormEnhancer {
         List gormTemplateMetaMethods = getGormTemplate().metaClass.methods.findAll{
             //exclude certain methods from enhancement
             !(it.name.contains('$getLookup') ||
-                    it.name.contains ("MetaClass") ||
-                    it.name.contains ("toString") ||
-                    it.name.contains ("GormMethods")
+              it.name.contains ("MetaClass") ||
+              it.name.contains ("of") ||
+              it.name.contains ("isGormEnhanced") ||
+              it.name.contains ("toString") ||
+              it.name.contains ("GormMethods")
             )
         }
 
@@ -38,9 +43,8 @@ class GormEnhancer {
         diff2.each {
             if (it.isStatic()) {
                 Closure closRef = GormClass::"$it.name"
-                closRef = closRef.rehydrate(domainClazz, getGormTemplate(), null)
-                //log.debug "adding gorm static method '$it.name()' to domain class $clazz metaClass"
-                emc.registerStaticMethod(it.name, closRef)
+                log.debug "adding gorm static method '$it.name()' to domain class $domainClazz metaClass"
+                emc.registerStaticMethod(it.name, {closRef.call(domainClazz)})
             }
         }
 
@@ -50,45 +54,48 @@ class GormEnhancer {
         domainClazz
     }
 
-    private static def enhanceInstanceMetaClass(proxy) {
-        if (proxy.hasProperty ("isGormEnhanced") && proxy.isGormEnhanced() ) {
+    private static def enhanceInstanceMetaClass(instance) {
+        if (instance.hasProperty ("isGormEnhanced") && instance.isGormEnhanced() ) {
             //already enhanced
-            return proxy
+            return instance
+
         }
 
-        List proxyClassMetaMethods = proxy.getClass().metaClass.methods
-        List proxyInstanceMetaMethods = proxy.metaClass.methods
+        List proxyClassMetaMethods = instance.getClass().metaClass.methods
+        List proxyInstanceMetaMethods = instance.metaClass.methods
         List<MetaMethod> diff = proxyInstanceMetaMethods - proxyClassMetaMethods
 
         List gormTemplateMetaMethods = getGormTemplate().metaClass.methods.findAll{
             //exclude certain methods from enhancement process
             !(it.name.contains('$getLookup') ||
-                    it.name.contains ("MetaClass") ||
-                    it.name.contains ("toString") ||
-                    it.name.contains ("GormMethods")
+              it.name.contains ("MetaClass") ||
+              it.name.contains ("of") ||
+              it.name.contains ("isGormEnhanced") ||
+              it.name.contains ("toString") ||
+              it.name.contains ("GormMethods")
             )
         }
 
         List diff2 = gormTemplateMetaMethods - proxyInstanceMetaMethods
 
-        ExpandoMetaClass emc = new ExpandoMetaClass (proxy.getClass(), true, true)
+        ExpandoMetaClass emc = new ExpandoMetaClass (instance.getClass(), true, true)
         //add GormClass methods
         diff2.each {
             Closure closRef = GormClass::"$it.name"
-            closRef = closRef.rehydrate(proxy, getGormTemplate(), null)
+            closRef = closRef.rehydrate(getGormTemplate(),instance , null)
             if (it.isStatic()) {
-                //log.debug "adding gorm static method '$it.name()' to proxy metaClass"
-                emc.registerStaticMethod(it.name, closRef)
+                log.debug "adding gorm (static) method '$it.name()' to instance metaClass"
+                emc.registerStaticMethod(it.name, {closRef.call(instance.getClass())} )
             } else {
-                //log.debug "adding gorm method '$it.name()' to proxy metaClass"
-                emc.registerInstanceMethod(it.name, closRef)
+                log.debug "adding gorm method '$it.name()' to instance metaClass"
+                emc.registerInstanceMethod(it.name, {closRef.call(instance)} )
             }
         }
 
-        emc.isGormEnhanced = {true} //added property saying we augmented the metaClass
+        emc.registerInstanceMethod("isGormEnhanced", { true })  //added property saying we augmented the metaClass
         emc.initialize()
-        proxy.setMetaClass (emc)
-        proxy
+        instance.setMetaClass (emc)
+        instance
     }
 
 }

@@ -3,6 +3,7 @@ package com.softwood.db.modelCapability
 import com.softwood.db.Database
 import com.softwood.db.Session
 
+import javax.persistence.EntityManager
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicLong
 
@@ -102,5 +103,16 @@ class GormClass {
         Closure whereConstraint = closure.clone()
         def result = whereConstraint.call()
         result
+    }
+
+    static long count (delegateClazz) {
+        Database.withSession { Session session ->
+            EntityManager em = session.getEntityManager()
+            em.flush()
+            String clsName = delegateClazz.simpleName
+            javax.persistence.TypedQuery query = em.createQuery("SELECT count(r) FROM  ${clsName} r", Long)
+            query.getSingleResult()
+        }
+
     }
 }
