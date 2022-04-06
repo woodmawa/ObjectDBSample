@@ -2,11 +2,15 @@ package com.softwood.db.modelCapability
 
 import com.softwood.db.Database
 import com.softwood.db.Session
+import groovy.util.logging.Slf4j
 
 import javax.persistence.EntityManager
+import javax.persistence.metamodel.EntityType
+import javax.persistence.metamodel.Metamodel
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicLong
 
+@Slf4j
 class GormClass {
     AtomicLong sequence = new AtomicLong (0)
     long id
@@ -110,9 +114,25 @@ class GormClass {
             EntityManager em = session.getEntityManager()
             em.flush()
             String clsName = delegateClazz.simpleName
+
+            checkClassRegistration(em, delegateClazz)
             javax.persistence.TypedQuery query = em.createQuery("SELECT count(r) FROM  ${clsName} r", Long)
             query.getSingleResult()
         }
 
+    }
+
+    static EntityType checkClassRegistration (EntityManager em, Class delegateClazz) {
+
+        String clsName = delegateClazz.simpleName
+
+        Set<EntityType> entTypes = em.getMetamodel().getEntities()
+        EntityType isRegisteredClass = entTypes.find {it.getName() == clsName}
+        EntityType et
+        if (!isRegisteredClass) {
+            log.debug "registering class $delegateClazz to database known types"
+            et = em.getMetamodel().entity(delegateClazz)
+        }
+        isRegisteredClass ?: et
     }
 }

@@ -12,12 +12,62 @@ class GormEnhancer {
 
 
     static def of (object) {
+
+        return enhanceMetaClass (object)
+
         if (object instanceof Class )
             enhanceDomainClass(object)
         else
             enhanceInstanceMetaClass(object)
     }
 
+    private static def enhanceMetaClass(object) {
+        if (object.hasProperty ("isGormEnhanced") && object.isGormEnhanced() ) {
+            //already enhanced
+            return object
+
+        }
+
+        def type = object.getClass()
+        def clazz = (type == Class) ? object : object.getClass()
+
+
+        List clazzMetaMethods = clazz.metaClass.methods
+        List objectInstanceMetaMethods = object.metaClass.methods
+        List<MetaMethod> diff = objectInstanceMetaMethods - clazzMetaMethods
+
+        List gormTemplateMetaMethods = getGormTemplate().metaClass.methods.findAll{
+            //exclude certain methods from enhancement process
+            !(it.name.contains('$getLookup') ||
+                    it.name.contains ("MetaClass") ||
+                    it.name.contains ("of") ||
+                    it.name.contains ("isGormEnhanced") ||
+                    it.name.contains ("toString") ||
+                    it.name.contains ("GormMethods")
+            )
+        }
+
+        List diff2 = gormTemplateMetaMethods - clazzMetaMethods
+
+        ExpandoMetaClass emc = new ExpandoMetaClass (clazz, true, true)
+        //add GormClass methods
+        diff2.each {
+            Closure closRef = GormClass::"$it.name"
+            //closRef = closRef.rehydrate(getGormTemplate(),object , null)
+            if (it.isStatic()) {
+                log.debug "adding gorm (static) method '$it.name()' to instance metaClass"
+                emc.registerStaticMethod(it.name, {closRef.call(object)} )
+            } else {
+                log.debug "adding gorm method '$it.name()' to instance metaClass"
+                emc.registerInstanceMethod(it.name, {closRef.call(object)} )
+            }
+        }
+
+        emc.registerStaticMethod("isGormEnhanced", { true })  //added property saying we augmented the metaClass
+        emc.initialize()
+        object.setMetaClass (emc)
+        object
+    }
 
     private static def enhanceDomainClass (Class domainClazz) {
         if (domainClazz.hasProperty ("isGormEnhanced") && domainClazz.isGormEnhanced() ) {
