@@ -197,7 +197,7 @@ class Session<T> {
                 }
                 if (record.hasProperty('status') && !hardDelete) {
                     log.debug "delete(): soft deleted $domainRecord"
-                    record.setProperty ('status', EntityState.SoftDeleted)
+                    domainRecord.setStatus (EntityState.SoftDeleted)
                     return 1
 
                 } else {
