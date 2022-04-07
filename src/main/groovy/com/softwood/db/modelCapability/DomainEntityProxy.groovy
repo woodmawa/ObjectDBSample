@@ -21,9 +21,9 @@ class DomainEntityProxy extends groovy.util.Proxy {
     private Class proxyType
     PersistenceUtil persistenceUtil = Persistence.getPersistenceUtil()
 
-    private static GormClass gormTemplate = new GormClass()
+    private static OrmClass gormTemplate = new OrmClass()
 
-    private static GormClass getGormTemplate () {
+    private static OrmClass getGormTemplate () {
         gormTemplate
     }
 
@@ -72,7 +72,7 @@ class DomainEntityProxy extends groovy.util.Proxy {
 
         diff2.each {
             if (it.isStatic()) {
-                Closure closRef = GormClass::"$it.name"
+                Closure closRef = OrmClass::"$it.name"
                 closRef = closRef.rehydrate(proxyType, getGormTemplate(), null)
                 //log.debug "adding gorm static method '$it.name()' to domain class $clazz metaClass"
                 emc.registerStaticMethod(it.name, closRef)
@@ -108,7 +108,7 @@ class DomainEntityProxy extends groovy.util.Proxy {
         ExpandoMetaClass emc = new ExpandoMetaClass (proxyType, true, true)
         //add GormClass methods
         diff2.each {
-            Closure closRef = GormClass::"$it.name"
+            Closure closRef = OrmClass::"$it.name"
             closRef = closRef.rehydrate(proxy, getGormTemplate(), null)
             if (it.isStatic()) {
                 //log.debug "adding gorm static method '$it.name()' to proxy metaClass"

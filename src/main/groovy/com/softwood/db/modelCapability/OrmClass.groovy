@@ -11,7 +11,7 @@ import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicLong
 
 @Slf4j
-class GormClass {
+class OrmClass {
     AtomicLong sequence = new AtomicLong (0)
     long id
     String status = "New"
