@@ -24,7 +24,8 @@ class Customer {
     }
 
     EntityState status = EntityState.New
-
+    EntityState getStatus() {status}
+    EntityState setStatus(EntityState s) {status = s}
 
     @Index (name="customers_idx") String name
 

@@ -169,8 +169,9 @@ class Session<T> {
                     domainRecord = getEntityManager().merge (record)
                 }
 
-                if (record.hasProperty('status') && record.status == EntityState.New) {
-                    record.setProperty ('status', EntityState.Persisted )
+                boolean hasStatus = record.hasProperty('status')
+                if (record.hasProperty('status') && (record.getProperty('status') as EntityState == EntityState.New) ) {
+                    domainRecord.status = EntityState.Persisted
                 }
 
                 EntityManager em = session.getEntityManager()
