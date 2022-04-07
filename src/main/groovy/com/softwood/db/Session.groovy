@@ -1,6 +1,6 @@
 package com.softwood.db
 
-
+import com.softwood.db.modelCapability.EntityState
 import groovy.util.logging.Slf4j
 
 import javax.persistence.EntityManager
@@ -107,23 +107,6 @@ class Session<T> {
         else
             //else defer to MetaClass to resolve
             throw new MissingMethodException(name, this, args)
-        /*
-        def dynamicMethods =[]
-        def method = dynamicMethods.find { it.match(methodName) }
-        if (method){
-            Database.metaClass."$methodName" = {Object[] varArgs ->
-                method.invokeMethod(delegate, methodName, varArgs)
-            }
-            return method.invokeMethod (methodName, args)
-        } else if (localEntityManager.get().respondsTo(methodName, args))
-            localEntityManager.get().invokeMethod(methodName, args)
-        else {
-            //generate and cache
-            Database.metaClass."$methodName" = {varArgs -> println "generated $methodName was called "}
-            method.invokeMethod (methodName, args)
-        }
-        //else throw new MissingMethodException(name, delegate, args)
-        */
 
     }
 
@@ -185,6 +168,11 @@ class Session<T> {
                     log.debug ("save():  record $record is not managed, so merge it with cache ")
                     domainRecord = getEntityManager().merge (record)
                 }
+
+                if (record.hasProperty('status') && record.status == EntityState.New) {
+                    record.setProperty ('status', EntityState.Persisted )
+                }
+
                 EntityManager em = session.getEntityManager()
                 em.persist(domainRecord)  //void return ()
                 domainRecord
@@ -206,9 +194,9 @@ class Session<T> {
                     log.debug ("delete():  record $record is not managed, so merge it with cache ")
                     domainRecord = getEntityManager().merge (record)
                 }
-                if (record.hasProperty('softDeleted') && !hardDelete) {
+                if (record.hasProperty('status') && !hardDelete) {
                     log.debug "delete(): soft deleted $domainRecord"
-                    record.setProperty ('softDeleted', true)
+                    record.setProperty ('status', EntityState.SoftDeleted)
                     return 1
 
                 } else {

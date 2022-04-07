@@ -38,12 +38,6 @@ class GormClass {
             where = this::where
         }
 
-        /*gormMethods.each {methodName, closure ->
-            println ("adding $methodName, with closure instance")
-            //emc.registerInstanceMethod(methodName, closure.rehydrate(instance, instance, instance))
-            instance.metaClass."$methodName" = closure
-        }*/
-
         MetaClass afterMci = instance.metaClass
         //emc.initialize()
         //instance.setMetaClass (emc)
@@ -89,8 +83,6 @@ class GormClass {
         id = sequence.incrementAndGet()
 
         Database.withSession { Session session ->
-            status = "attached"
-
             session.save(this)
         }
 
@@ -115,24 +107,10 @@ class GormClass {
             em.flush()
             String clsName = delegateClazz.simpleName
 
-            checkClassRegistration(em, delegateClazz)
             javax.persistence.TypedQuery query = em.createQuery("SELECT count(r) FROM  ${clsName} r", Long)
             query.getSingleResult()
         }
 
     }
 
-    static EntityType checkClassRegistration (EntityManager em, Class delegateClazz) {
-
-        String clsName = delegateClazz.simpleName
-
-        Set<EntityType> entTypes = em.getMetamodel().getEntities()
-        EntityType isRegisteredClass = entTypes.find {it.getName() == clsName}
-        EntityType et
-        if (!isRegisteredClass) {
-            log.debug "registering class $delegateClazz to database known types"
-            et = em.getMetamodel().entity(delegateClazz)
-        }
-        isRegisteredClass ?: et
-    }
 }

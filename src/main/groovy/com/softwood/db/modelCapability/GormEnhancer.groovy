@@ -1,6 +1,11 @@
 package com.softwood.db.modelCapability
 
+import com.softwood.db.Database
 import groovy.util.logging.Slf4j
+
+import javax.persistence.EntityManager
+import javax.persistence.metamodel.EntityType
+import javax.persistence.metamodel.Metamodel
 
 @Slf4j
 class GormEnhancer {
@@ -15,10 +20,6 @@ class GormEnhancer {
 
         return enhanceMetaClass (object)
 
-        if (object instanceof Class )
-            enhanceDomainClass(object)
-        else
-            enhanceInstanceMetaClass(object)
     }
 
     private static def enhanceMetaClass(object) {
@@ -31,6 +32,8 @@ class GormEnhancer {
         def type = object.getClass()
         def clazz = (type == Class) ? object : object.getClass()
 
+        //if class is not known, this will register to the Metamodel
+        checkClassRegistration(clazz)
 
         List clazzMetaMethods = clazz.metaClass.methods
         List objectInstanceMetaMethods = object.metaClass.methods
@@ -148,4 +151,21 @@ class GormEnhancer {
         instance
     }
 
+    /*
+     * checks class against the metamodel and adds it if its missing
+     */
+    static EntityType checkClassRegistration (Class delegateClazz) {
+
+        String clsName = delegateClazz.simpleName
+        Metamodel metaModel = Database.getEmf().getMetamodel()
+
+        Set<EntityType> entTypes = metaModel.getEntities()
+        EntityType isRegisteredClass = entTypes.find {it.getName() == clsName}
+        EntityType et
+        if (!isRegisteredClass) {
+            log.debug "registering class $delegateClazz to database known types"
+            et = metaModel.entity(delegateClazz)
+        }
+        isRegisteredClass ?: et
+    }
 }

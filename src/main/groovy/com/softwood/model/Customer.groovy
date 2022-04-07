@@ -1,5 +1,7 @@
 package com.softwood.model
 
+import com.softwood.db.modelCapability.EntityState
+
 import javax.jdo.annotations.Index
 import javax.persistence.CascadeType
 import javax.persistence.Entity
@@ -14,21 +16,22 @@ import static javax.persistence.CascadeType.*
 
 @Entity
 class Customer {
-    @Id @GeneratedValue(strategy= GenerationType.IDENTITY)
-    final long id
-    @Version long version
+    @Id @GeneratedValue(strategy= GenerationType.IDENTITY) final long id
 
+    @Version long version
     long getVersion () {
         version
     }
+
+    EntityState status = EntityState.New
+
 
     @Index (name="customers_idx") String name
 
     @OneToMany (cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     Collection<Site> sites = []
 
-    boolean softDeleted = false
-    boolean isActive () { softDeleted == false }
+    boolean isActive () { status == EntityState.Persisted }
 
     //implement abstract trait method
     static String getEntityClassName () {
