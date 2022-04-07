@@ -40,7 +40,7 @@ class OrmEnhancer {
             !(it.name.contains('$getLookup') ||
                     it.name.contains ("MetaClass") ||
                     it.name.contains ("enhance") ||
-                    it.name.contains ("isGormEnhanced") ||
+                    it.name.contains ("isOrmEnhanced") ||
                     it.name.contains ("toString") ||
                     it.name.contains ("GormMethods")
             )
@@ -55,10 +55,23 @@ class OrmEnhancer {
             //closRef = closRef.rehydrate(getGormTemplate(),object , null)
             if (it.isStatic()) {
                 //log.debug "adding gorm (static) method '$it.name()' to instance metaClass"
-                emc.registerStaticMethod(it.name, {closRef.call(object)} )
+                emc.registerStaticMethod(it.name, {closRef.call(clazz)} )
             } else {
                 //log.debug "adding gorm method '$it.name()' to instance metaClass"
-                emc.registerInstanceMethod(it.name, {closRef.call(object)} )
+                Class[] pTypes = closRef.getParameterTypes()
+                int numParams = closRef.getMaximumNumberOfParameters()
+                switch (numParams) {
+                    case 0 -> emc.registerInstanceMethod(it.name, {0})
+                    case 1 -> emc.registerInstanceMethod(it.name, {args ->
+                        println "(1)args : " + it.name + " with ("+args+")"
+                        1
+                    })
+                    case 2 -> emc.registerInstanceMethod(it.name, {arg1, arg2 ->
+                        println "(2)args : " + it.name + " with ($arg1, $arg2)"
+                        2})
+                }
+
+                //emc.registerInstanceMethod(it.name, closRef )
             }
         }
 

@@ -2,6 +2,7 @@ package scripts.softwood.database
 
 import com.softwood.db.modelCapability.OrmEnhancer
 import com.softwood.model.Customer
+import org.codehaus.groovy.runtime.MethodClosure
 
 //summariser method
 def augmentedMethodsSummary (MetaClass origMetaClass, MetaClass instanceMetaClass, MetaClass enhMetaClass, MetaClass inhInstanceMetaClass) {
@@ -49,5 +50,16 @@ Customer enhancedCustomer2 = OrmEnhancer.enhance (cust2)
 println "instance  $enhancedCustomer is orm enhanced " + enhancedCustomer.isOrmEnhanced()
 println "instance  $enhancedCustomer2 is orm enhanced " + enhancedCustomer2.isOrmEnhanced()
 
+MethodClosure mc = Customer::getById
 
+MetaMethod byIdMM = Customer.metaClass.methods.find {it.name == 'getById'}
+println "getById sig is " + byIdMM.getSignature()
+
+def result = byIdMM.invoke (cust1, 1, "another" )
+
+
+def res = mc.call(Customer, 2)
+
+Customer c = Customer.getById (Customer, 2 as Object)
+c
 //augmentedMethodsSummary (origClassMC, origCustMC, EnhancedCustomer.metaClass, enhancedCustomer.metaClass)

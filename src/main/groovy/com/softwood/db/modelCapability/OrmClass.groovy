@@ -79,6 +79,13 @@ class OrmClass {
         clazz
     }
 
+    def getById (id) {
+        def myThis = this
+        Database.withSession {Session  session ->
+            session.getEntityById(object.getClass(), id)
+        }
+    }
+
     def save () {
         id = sequence.incrementAndGet()
 

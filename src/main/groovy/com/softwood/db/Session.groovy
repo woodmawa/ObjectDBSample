@@ -180,6 +180,7 @@ class Session<T> {
              }
             domainObjectList
         }
+
         if (result instanceof Collection && result.size() == 1)
             result[0]
         else
