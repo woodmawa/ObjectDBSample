@@ -60,6 +60,7 @@ class OrmEnhancer {
                 //log.debug "adding gorm method '$it.name()' to instance metaClass"
                 Class[] pTypes = closRef.getParameterTypes()
                 int numParams = closRef.getMaximumNumberOfParameters()
+                /*
                 switch (numParams) {
                     case 0 -> emc.registerInstanceMethod(it.name, {0})
                     case 1 -> emc.registerInstanceMethod(it.name, {args ->
@@ -70,7 +71,8 @@ class OrmEnhancer {
                         println "(2)args : " + it.name + " with ($arg1, $arg2)"
                         2})
                 }
-
+*/
+                emc."$it.name" = getOrmTemplate()::"$it.name"
                 //emc.registerInstanceMethod(it.name, closRef )
             }
         }

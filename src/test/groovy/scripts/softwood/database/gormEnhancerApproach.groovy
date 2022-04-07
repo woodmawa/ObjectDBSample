@@ -55,7 +55,7 @@ MethodClosure mc = Customer::getById
 MetaMethod byIdMM = Customer.metaClass.methods.find {it.name == 'getById'}
 println "getById sig is " + byIdMM.getSignature()
 
-def result = byIdMM.invoke (cust1, 1, "another" )
+def result = byIdMM.invoke (cust1, 1 )
 
 
 def res = mc.call(Customer, 2)
