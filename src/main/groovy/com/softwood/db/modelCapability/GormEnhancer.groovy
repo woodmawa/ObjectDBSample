@@ -16,7 +16,7 @@ class GormEnhancer {
     }
 
 
-    static def of (object) {
+    static def enhance(object) {
 
         return enhanceMetaClass (object)
 
@@ -43,7 +43,7 @@ class GormEnhancer {
             //exclude certain methods from enhancement process
             !(it.name.contains('$getLookup') ||
                     it.name.contains ("MetaClass") ||
-                    it.name.contains ("of") ||
+                    it.name.contains ("enhance") ||
                     it.name.contains ("isGormEnhanced") ||
                     it.name.contains ("toString") ||
                     it.name.contains ("GormMethods")
@@ -58,10 +58,10 @@ class GormEnhancer {
             Closure closRef = GormClass::"$it.name"
             //closRef = closRef.rehydrate(getGormTemplate(),object , null)
             if (it.isStatic()) {
-                log.debug "adding gorm (static) method '$it.name()' to instance metaClass"
+                //log.debug "adding gorm (static) method '$it.name()' to instance metaClass"
                 emc.registerStaticMethod(it.name, {closRef.call(object)} )
             } else {
-                log.debug "adding gorm method '$it.name()' to instance metaClass"
+                //log.debug "adding gorm method '$it.name()' to instance metaClass"
                 emc.registerInstanceMethod(it.name, {closRef.call(object)} )
             }
         }

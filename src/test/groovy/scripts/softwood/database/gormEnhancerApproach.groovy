@@ -24,7 +24,7 @@ MetaClass origCustMC = cust1.metaClass  //instance metaClass
 //assert origCustMC instanceof MetaClassImpl //wrapped by HandleMetaClass proxy
 List origClassMM = origClassMC.methods.collect {(it.isStatic() ? "(static)" : "") + it.name}
 
-Class EnhancedCustomer = GormEnhancer.of (Customer)
+Class EnhancedCustomer = GormEnhancer.enhance (Customer)
 println "Class $EnhancedCustomer is gorm enhanced " + EnhancedCustomer.isGormEnhanced()
 
 assert Customer.metaClass instanceof ExpandoMetaClass
@@ -38,16 +38,14 @@ List diff = enhClassMM - origClassMM
 
 
 boolean canCount = EnhancedCustomer.metaClass.respondsTo (EnhancedCustomer, 'count')
-Closure cnt = EnhancedCustomer::count
 if (canCount) {
     def numCust = EnhancedCustomer.count()
-    //def numCust = cnt.call()
     println "\t->> count of customer records is $numCust"
 }
 
-Customer enhancedCustomer = GormEnhancer.of (cust1)
+Customer enhancedCustomer = GormEnhancer.enhance (cust1)
 
 println "instance  $enhancedCustomer is gorm enhanced " + enhancedCustomer.isGormEnhanced()
 
 
-augmentedMethodsSummary (origClassMC, origCustMC, EnhancedCustomer.metaClass, enhancedCustomer.metaClass)
+//augmentedMethodsSummary (origClassMC, origCustMC, EnhancedCustomer.metaClass, enhancedCustomer.metaClass)
