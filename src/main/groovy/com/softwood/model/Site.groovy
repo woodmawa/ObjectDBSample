@@ -1,5 +1,7 @@
 package com.softwood.model
 
+import com.softwood.db.modelCapability.EntityState
+
 import javax.jdo.annotations.Index
 import javax.jdo.annotations.Indices
 import javax.persistence.CascadeType
@@ -24,6 +26,8 @@ class Site {
         version
     }
 
+    EntityState status = EntityState.New
+
     @Index (name="sites_idx") String name
 
     @ManyToOne  //(cascade = CascadeType.PERSIST)
@@ -31,8 +35,7 @@ class Site {
 
     @Embedded GeoAddress address
 
-    boolean softDeleted = false
-    boolean isActive () { softDeleted == false }
+    boolean isActive () { status == EntityState.Persisted }
 
     String toString() {
         "Site [id: $id, name:$name] belongs to $customer"
