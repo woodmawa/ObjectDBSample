@@ -44,8 +44,10 @@ if (canCount) {
 }
 
 Customer enhancedCustomer = GormEnhancer.enhance (cust1)
+Customer enhancedCustomer2 = GormEnhancer.enhance (cust2)
 
 println "instance  $enhancedCustomer is gorm enhanced " + enhancedCustomer.isGormEnhanced()
+println "instance  $enhancedCustomer2 is gorm enhanced " + enhancedCustomer2.isGormEnhanced()
 
 
 //augmentedMethodsSummary (origClassMC, origCustMC, EnhancedCustomer.metaClass, enhancedCustomer.metaClass)

@@ -91,7 +91,6 @@ class GormClass {
     void delete () {
         Database.withSession { Session session ->
             def obj = session.delete(id)
-            status = "soft deleted"
         }
     }
 

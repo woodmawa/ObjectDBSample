@@ -23,7 +23,7 @@ class GormEnhancer {
     }
 
     private static def enhanceMetaClass(object) {
-        if (object.hasProperty ("isGormEnhanced") && object.isGormEnhanced() ) {
+        if (object.respondsTo ("isGormEnhanced") && object.isGormEnhanced() ) {
             //already enhanced
             return object
 
