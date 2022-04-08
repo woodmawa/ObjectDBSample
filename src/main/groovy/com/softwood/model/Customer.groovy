@@ -42,4 +42,8 @@ class Customer {
     String toString() {
         "Customer [id: $id, name:$name]"
     }
+
+    /*static def $static_methodMissing (String name, args) {
+        println "missing method $name ($args)"
+    }*/
 }

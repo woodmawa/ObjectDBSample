@@ -2,6 +2,7 @@ package com.softwood.db.modelCapability
 
 import com.softwood.db.Database
 import groovy.util.logging.Slf4j
+import org.codehaus.groovy.runtime.metaclass.ClosureStaticMetaMethod
 
 import javax.persistence.metamodel.EntityType
 import javax.persistence.metamodel.Metamodel
@@ -30,12 +31,16 @@ class OrmEnhancer {
 
         def localInstance
         boolean objectToEnhanceIsInstance = false
+        boolean objectToEnhanceIsEntityClass = false
+
         if (object.getClass() == clazz ) {
             localInstance = object
             objectToEnhanceIsInstance = true
         }
-        else
+        else {
             localInstance = clazz::new()
+            objectToEnhanceIsEntityClass = true
+        }
 
         def clazzMetaClass = clazz.metaClass
         /*if (clazzMetaClass instanceof ExpandoMetaClass && objectToEnhanceIsInstance ) {
@@ -124,9 +129,30 @@ class OrmEnhancer {
             }
         }
 
+        if (objectToEnhanceIsEntityClass) {
+            println "adding methodMissing "
+            String meth = '$static_methodMissing'
+
+            Closure staticMissingMethodSpecification = {String name, args
+                println "missing method $name "
+                MetaClass mc = delegate.metaClass
+                if (mc.respondsTo(name, args) ) {
+                    mc.invokeMethod(name, args)
+                } else {
+                    throw new MissingMethodException ("method $name not defined on EntityClass $clazz")
+                }
+            }
+
+            emc.registerStaticMethod (meth, staticMissingMethodSpecification, [String, Object] as Class[])
+        }
+
         emc.registerStaticMethod("isOrmEnhanced", { true })  //added property saying we augmented the metaClass
+
+        MetaMethod
         emc.initialize()
         object.setMetaClass (emc)
+
+
         object
     }
 

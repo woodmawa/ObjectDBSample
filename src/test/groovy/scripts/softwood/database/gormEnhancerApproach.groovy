@@ -4,6 +4,8 @@ import com.softwood.db.modelCapability.OrmEnhancer
 import com.softwood.model.Customer
 import org.codehaus.groovy.runtime.MethodClosure
 
+import java.lang.reflect.Method
+
 //summariser method
 def augmentedMethodsSummary (MetaClass origMetaClass, MetaClass instanceMetaClass, MetaClass enhMetaClass, MetaClass inhInstanceMetaClass) {
     List origClassMM = origMetaClass.methods.collect{(it.isStatic() ? "(static)" : "") + it.name}
@@ -55,13 +57,29 @@ MethodClosure mc = Customer::getById
 MetaMethod byIdMM = Customer.metaClass.methods.find {it.name == 'getById'}
 println "getById sig is " + byIdMM.getSignature()
 
-def result = byIdMM.invoke (enhancedCustomer, 1 )
+def result = byIdMM.invoke (Customer, 1 )
 
 
 def res = mc.call(2)
 println "got $result on mm.invoke(1)"
 println "got $res on mc.call(2)"
 
-Customer c = Customer.getById ( 3 as Object )
+//Method m = Customer.getMethod('getById', Object)
+//m.invoke(Customer, 3 )
+MetaMethod mm = Customer.metaClass.getMetaMethod('getById', Object)
+mm.invoke(Customer, 3 )
+
+String meth = '$static_methodMissing'
+
+def  mmiss = Customer.metaClass.respondsTo (Customer, meth)
+println mmiss
+println mmiss.size()
+assert mmiss
+assert mmiss[0].isStatic()
+
+
+Customer.metaClass.invokeMethod(Customer, meth, ["hi", 1])
+
+def c = Customer.getById ( 4 as Object )
 println "got $c using Customer.getById (3) " //bullshit!!
 //augmentedMethodsSummary (origClassMC, origCustMC, EnhancedCustomer.metaClass, enhancedCustomer.metaClass)
