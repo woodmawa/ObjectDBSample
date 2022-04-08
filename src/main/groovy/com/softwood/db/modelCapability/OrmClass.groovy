@@ -2,6 +2,7 @@ package com.softwood.db.modelCapability
 
 import com.softwood.db.Database
 import com.softwood.db.Session
+import com.softwood.model.Customer
 import groovy.util.logging.Slf4j
 
 import javax.persistence.EntityManager
@@ -25,7 +26,7 @@ class OrmClass {
         println "\tfrom hello, hi William"
     }
 
-    static def of (def instance) {
+    static def enhance (def instance) {
         println "of() called to enhance instance "
         ExpandoMetaClass emc = new ExpandoMetaClass (instance.getClass(), true, true)
         ExpandoMetaClass.enableGlobally()
@@ -44,7 +45,7 @@ class OrmClass {
         instance
     }
 
-    static Class of (Class <?> clazz) {
+    static Class enhance(Class <?> clazz) {
 
         List<Method> reflectedMethods = this.getDeclaredMethods()
         Map<String, Method> gormReflectedMethods = [:]
@@ -82,7 +83,9 @@ class OrmClass {
     def getById (id) {
         def myThis = this
         Database.withSession {Session  session ->
-            session.getEntityById(object.getClass(), id)
+            println "getting object by id $id , myThis is $myThis"
+            //how to detect which class i am in
+            session.getEntityById(Customer, id)
         }
     }
 

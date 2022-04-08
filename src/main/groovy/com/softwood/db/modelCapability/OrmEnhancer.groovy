@@ -28,6 +28,20 @@ class OrmEnhancer {
         def type = object.getClass()
         def clazz = (type == Class) ? object : object.getClass()
 
+        def localInstance
+        boolean objectToEnhanceIsInstance = false
+        if (object.getClass() == clazz ) {
+            localInstance = object
+            objectToEnhanceIsInstance = true
+        }
+        else
+            localInstance = clazz::new()
+
+        def clazzMetaClass = clazz.metaClass
+        /*if (clazzMetaClass instanceof ExpandoMetaClass && objectToEnhanceIsInstance ) {
+            return object
+        }*/
+
         //if class is not known, this will register to the Metamodel
         checkClassRegistration(clazz)
 
@@ -48,18 +62,44 @@ class OrmEnhancer {
 
         List diff2 = gormTemplateMetaMethods - clazzMetaMethods
 
+        ExpandoMetaClass.enableGlobally()
         ExpandoMetaClass emc = new ExpandoMetaClass (clazz, true, true)
         //add GormClass methods
         diff2.each {
             Closure closRef = OrmClass::"$it.name"
+            closRef = closRef.clone() as Closure
+
             //closRef = closRef.rehydrate(getGormTemplate(),object , null)
             if (it.isStatic()) {
+                Class[] pTypes = closRef.getParameterTypes()
+                int numParams = closRef.getMaximumNumberOfParameters()
+                boolean firstArgIsEntityClass = pTypes ? (pTypes?[0] == clazz) : false
+                if (it.name == 'getById' && numParams == 1) {
+                    //register as is
+                }
+                else if (it.name == 'count' /*&& firstArgIsEntityClass*/)
+                    closRef = closRef.curry(clazz)
+
                 //log.debug "adding gorm (static) method '$it.name()' to instance metaClass"
-                emc.registerStaticMethod(it.name, {closRef.call(clazz)} )
+                emc.registerStaticMethod(it.name, closRef)  //closRef.call(clazz)
             } else {
                 //log.debug "adding gorm method '$it.name()' to instance metaClass"
                 Class[] pTypes = closRef.getParameterTypes()
                 int numParams = closRef.getMaximumNumberOfParameters()
+                boolean firstArgIsOrmClassType = pTypes ? (pTypes?[0] == OrmClass) : false
+                boolean secondArgIsEntityType = (pTypes.size()) > 2 ? (pTypes?[1] == clazz) : false
+
+                closRef = closRef.curry(getOrmTemplate())
+                /*if (numParams > 0 && firstArgIsOrmClassType) {
+                    println "curry first param of closure "
+                    closRef = closRef.curry(getOrmTemplate())
+                }
+                if (numParams > 1 && secondArgIsEntityType) {
+                    println "curry first and second param of closure "
+                    //closRef = closRef.curry(arg)
+
+                }*/
+
                 /*
                 switch (numParams) {
                     case 0 -> emc.registerInstanceMethod(it.name, {0})
@@ -71,8 +111,15 @@ class OrmEnhancer {
                         println "(2)args : " + it.name + " with ($arg1, $arg2)"
                         2})
                 }
-*/
-                emc."$it.name" = getOrmTemplate()::"$it.name"
+            */
+                emc.registerInstanceMethod(it.name, {args ->
+                    println "got args $args"
+                    closRef.call (args)
+                })
+
+                /*emc."$it.name" = {ArrayList args ->
+                    println "got args $args"
+                    closRef.call(*args)}  //getOrmTemplate()::"$it.name"*/
                 //emc.registerInstanceMethod(it.name, closRef )
             }
         }

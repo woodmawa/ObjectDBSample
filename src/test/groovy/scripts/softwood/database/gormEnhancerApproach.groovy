@@ -55,11 +55,13 @@ MethodClosure mc = Customer::getById
 MetaMethod byIdMM = Customer.metaClass.methods.find {it.name == 'getById'}
 println "getById sig is " + byIdMM.getSignature()
 
-def result = byIdMM.invoke (cust1, 1 )
+def result = byIdMM.invoke (enhancedCustomer, 1 )
 
 
-def res = mc.call(Customer, 2)
+def res = mc.call(2)
+println "got $result on mm.invoke(1)"
+println "got $res on mc.call(2)"
 
-Customer c = Customer.getById (Customer, 2 as Object)
-c
+Customer c = Customer.getById ( 3 as Object )
+println "got $c using Customer.getById (3) " //bullshit!!
 //augmentedMethodsSummary (origClassMC, origCustMC, EnhancedCustomer.metaClass, enhancedCustomer.metaClass)
