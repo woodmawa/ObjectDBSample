@@ -122,9 +122,7 @@ class OrmEnhancer {
                     closRef.call (args)
                 })
 
-                /*emc."$it.name" = {ArrayList args ->
-                    println "got args $args"
-                    closRef.call(*args)}  //getOrmTemplate()::"$it.name"*/
+
                 //emc.registerInstanceMethod(it.name, closRef )
             }
         }
@@ -134,16 +132,16 @@ class OrmEnhancer {
             String meth = '$static_methodMissing'
 
             Closure staticMissingMethodSpecification = {String name, args
-                println "missing method $name "
                 MetaClass mc = delegate.metaClass
                 if (mc.respondsTo(name, args) ) {
+                    println "missing method $name look for it on the metaClass"
                     mc.invokeMethod(name, args)
                 } else {
                     throw new MissingMethodException ("method $name not defined on EntityClass $clazz")
                 }
             }
 
-            emc.registerStaticMethod (meth, staticMissingMethodSpecification, [String, Object] as Class[])
+            emc.registerStaticMethod (meth, staticMissingMethodSpecification, String, Object)
         }
 
         emc.registerStaticMethod("isOrmEnhanced", { true })  //added property saying we augmented the metaClass

@@ -20,6 +20,28 @@ def augmentedMethodsSummary (MetaClass origMetaClass, MetaClass instanceMetaClas
 }
 
 
+String meth = '$static_methodMissing'
+
+class Temp {
+    def method () {
+        println "declared method is invoked "
+    }
+}
+Temp.metaClass.dyn = 10
+
+Closure missing = {String name, Object args ->
+    println "method $name is not declared on the class with args $args"
+}
+ExpandoMetaClass emc = Temp.metaClass
+emc.registerStaticMethod (meth, missing, String, Object)
+/*Temp.metaClass.'static'."$meth" = {String name, Object arg ->
+    println "method $name is not declared on the class "
+}*/
+
+Temp.hi()
+MetaMethod  tempMethMissing = Temp.metaClass.getMetaMethod(meth, String, Object)
+println "temp Missing method signature " + tempMethMissing.getSignature()
+
 MetaClass origClassMC = Customer.metaClass //Class metaClass
 
 Customer cust1 = new Customer (name:"Goldman Sachs")
@@ -69,7 +91,6 @@ println "got $res on mc.call(2)"
 MetaMethod mm = Customer.metaClass.getMetaMethod('getById', Object)
 mm.invoke(Customer, 3 )
 
-String meth = '$static_methodMissing'
 
 def  mmiss = Customer.metaClass.respondsTo (Customer, meth)
 println mmiss
@@ -77,8 +98,10 @@ println mmiss.size()
 assert mmiss
 assert mmiss[0].isStatic()
 
+MetaMethod  customerMethMissing = Temp.metaClass.getMetaMethod(meth, String, Object)
+println "Customer Missing method signature " + tempMethMissing.getSignature()
 
-Customer.metaClass.invokeMethod(Customer, meth, ["hi", 1])
+Customer.metaClass.invokeMethod(Customer, meth, "hi", 1)
 
 def c = Customer.getById ( 4 as Object )
 println "got $c using Customer.getById (3) " //bullshit!!
