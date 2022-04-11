@@ -1,6 +1,10 @@
 package scripts.softwood.database
 
+import com.softwood.runtime.WillsMethodClosure
 import org.codehaus.groovy.runtime.MethodClosure
+import org.codehaus.groovy.runtime.metaclass.ClosureStaticMetaMethod
+
+ExpandoMetaClass.enableGlobally()  //setup for expandMc at the start
 
 boolean shouldFail ( throwable, Closure code) {
     try {
@@ -13,6 +17,10 @@ boolean shouldFail ( throwable, Closure code) {
         }
     }
 }
+
+//you can define a new method as being declared on some class and implemented as a closure, then invoke it
+MetaMethod extraMM = new ClosureStaticMetaMethod('extra', Doner, {arg ->println "extra called with [$arg]"}, (Class[])[String] )
+extraMM.invoke(Doner, "william")
 
 class Doner {
     int instanceNumber
@@ -50,24 +58,24 @@ class Recipient {
 
     }
 }
+
 MethodClosure transfer = Doner::donerStaticMethod
-println "call doner static method closure " + transfer (" try this on transfer ")
+println "call doner static method closure " + transfer (" try this on transfer closure ")
 
-MethodClosure rehydrateTransfer = transfer.rehydrate(Recipient, Recipient, null )
-
-
-Recipient.metaClass.'static'.change = { }
+//Closure clonedTransfer = transfer.clone()
+//WillsMethodClosure rehydrateTransfer = clonedTransfer.rehydrate(Recipient, Recipient, null )
+//String res = rehydrateTransfer (" try this on rehyrated transfer closure  ")
+//println "call rehydrated  static method closure " + res
 
 //trigger method missing- this works
 Recipient.hi()
 ExpandoMetaClass rmc = Recipient.metaClass
-rmc.registerStaticMethod('added', {"hello - added $it"} )
-rmc.registerStaticMethod('transfer', rehydrateTransfer )
-
+rmc.registerStaticMethod('added', transfer, (Class[])[String] )
+rmc.registerStaticMethod('transform', {String s -> transfer(s.toUpperCase()) }, (Class[])[String] )
 //call transfered static method
 //MethodClosure extra = Recipient::added
 println "call dyn added : " + Recipient.added ("try this from transfer ")
-
+println "call dyn added : " + Recipient.transform ("transformed arg to uppercase ")
 
 println "call doner rehydrated static method closure " + Recipient.transfer (" try this on rehydrated transfer to recipient  ")
 
