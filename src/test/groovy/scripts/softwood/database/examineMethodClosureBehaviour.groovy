@@ -29,7 +29,7 @@ class Doner {
         "static method() of Doner ($this) is called with arg [$arg]"
     }
 
-    def instanceMethod (String arg) {
+    def donerInstanceMethod (String arg) {
         "instance method() of Doner ($this) called with arg [$arg]"
     }
 
@@ -45,12 +45,12 @@ class Recipient {
         "static method() of Doner ($this) is called with arg [$arg]"
     }
 
-    def instanceMethod (String arg) {
+    def recipientInstanceMethod (String arg) {
         "instance method() of Doner ($this) called with arg [$arg]"
     }
 
     String toString () {
-        "Doner [recip num : $recipientNumber]"
+        "Recipient [recipient number : $recipientNumber]"
     }
 
     static def $static_methodMissing (String name, Object args) {
@@ -59,9 +59,12 @@ class Recipient {
     }
 }
 
-MethodClosure transfer = Doner::donerStaticMethod
-println "call doner static method closure " + transfer (" try this on transfer closure ")
+MethodClosure transferStaticMethod = Doner::donerStaticMethod
+println "call doner static method closure " + transferStaticMethod (" try this on transfer closure ")
+MethodClosure transferInstanceMethod = Doner::donerInstanceMethod
 
+Doner tempDoner = new Doner (instanceNumber:100)
+transferInstanceMethod (tempDoner, "invoke instance method")
 //Closure clonedTransfer = transfer.clone()
 //WillsMethodClosure rehydrateTransfer = clonedTransfer.rehydrate(Recipient, Recipient, null )
 //String res = rehydrateTransfer (" try this on rehyrated transfer closure  ")
@@ -70,28 +73,37 @@ println "call doner static method closure " + transfer (" try this on transfer c
 //trigger method missing- this works
 Recipient.hi()
 ExpandoMetaClass rmc = Recipient.metaClass
-rmc.registerStaticMethod('added', transfer, (Class[])[String] )
-rmc.registerStaticMethod('transform', {String s -> transfer(s.toUpperCase()) }, (Class[])[String] )
+rmc.registerStaticMethod('added', transferStaticMethod, (Class[])[String] )
+rmc.registerStaticMethod('transferStaticMethod', {String s -> transferStaticMethod(s.toUpperCase()) }, (Class[])[String] )
+
+//now transfer doner instance method to metaClass (before we create any recipients
+rmc.registerInstanceMethod('transferInstanceMethod', {String s ->
+    def thisDelegate = delegate
+    Closure instanceMM = transferInstanceMethod
+    instanceMM (Doner, s.toUpperCase())}
+)
+
 //call transfered static method
 //MethodClosure extra = Recipient::added
 println "call dyn added : " + Recipient.added ("try this from transfer ")
-println "call dyn added : " + Recipient.transform ("transformed arg to uppercase ")
+println "call dyn added : " + Recipient.transferStaticMethod ("transformed arg to uppercase ")
 
-println "call doner rehydrated static method closure " + Recipient.transfer (" try this on rehydrated transfer to recipient  ")
+println "call doner rehydrated static method closure " + Recipient.transferStaticMethod (" try this on rehydrated transfer to recipient  ")
 
 
-println Doner.staticMethod()
-assert shouldFail (MissingMethodException) {println Doner.instanceMethod("hello")}
+println Doner.donerStaticMethod("direct invoke of doner static method")
+//can't invoke instance method on Class, will throw an exception
+assert shouldFail (MissingMethodException) {println Doner.donerInstanceMethod("hello")}
 
 Doner doner1 = new Doner (instanceNumber:1)
 Doner doner2 = new Doner (instanceNumber:2)
 
-println doner1.instanceMethod("hello")
+println doner1.donerInstanceMethod("hello")  //direct invoke
 
-MethodClosure mc1 = doner1::instanceMethod
+MethodClosure mc1 = doner1::donerInstanceMethod
 println "instance method closure mc1 has param types  " + mc1.parameterTypes
 
-MethodClosure donerClassMc = Doner::instanceMethod
+MethodClosure donerClassMc = Doner::donerInstanceMethod
 println "Doner class method closure for instance method has param types  " + donerClassMc.parameterTypes
 
 
@@ -101,14 +113,20 @@ println "Doner class method closure for instance method has param types  " + don
 //donerClassMc.invoke(Doner, "invoked via class level methodClosure ref ")
 
 
-MethodClosure mc2 = doner2::instanceMethod
+MethodClosure mc2 = doner2::donerInstanceMethod
 
 println mc1("hello1")
 println mc2("hello2")
 
+
+Recipient recip1 = new Recipient(recipientNumber: 1)
+
+MetaMethod transferredInstanceMM = recip1.metaClass.getMetaMethod('transferInstanceMethod', (Class[]) [String])
+transferredInstanceMM.invoke(recip1, "invoked a transferred Doner instance method in recipient")
+
 //try rehydrate from doner2 methodClsoure back to doner1
-MethodClosure mc3 = mc2.rehydrate(doner1, doner1, null)
-println mc3 ("rehydrated ")
+//MethodClosure mc3 = mc2.rehydrate(doner1, doner1, null)
+//println mc3 ("rehydrated ")
 
 List<MetaMethod> list = Doner.metaClass.methods.findAll {it.name.contains ("Method")}
 Map<String, MetaMethod> mmMap = list.collectEntries{new MapEntry (it.name, it)}
