@@ -64,6 +64,7 @@ println "call doner static method closure " + transferStaticMethod (" try this o
 MethodClosure transferInstanceMethod = Doner::donerInstanceMethod
 
 Doner tempDoner = new Doner (instanceNumber:100)
+Recipient tempRecipient  = new Recipient (instanceNumber:200)
 transferInstanceMethod (tempDoner, "invoke instance method")
 //Closure clonedTransfer = transfer.clone()
 //WillsMethodClosure rehydrateTransfer = clonedTransfer.rehydrate(Recipient, Recipient, null )
@@ -76,11 +77,14 @@ ExpandoMetaClass rmc = Recipient.metaClass
 rmc.registerStaticMethod('added', transferStaticMethod, (Class[])[String] )
 rmc.registerStaticMethod('transferStaticMethod', {String s -> transferStaticMethod(s.toUpperCase()) }, (Class[])[String] )
 
-//now transfer doner instance method to metaClass (before we create any recipients
-rmc.registerInstanceMethod('transferInstanceMethod', {String s ->
+Closure rmclos = {String s ->
     def thisDelegate = delegate
     Closure instanceMM = transferInstanceMethod
     instanceMM (Doner, s.toUpperCase())}
+rmclos = mclos.rehydrate(tempRecipient, tempRecipient, null)
+
+//now transfer doner instance method to metaClass (before we create any recipients
+rmc.registerInstanceMethod('transferInstanceMethod', rmclos
 )
 
 //call transfered static method
