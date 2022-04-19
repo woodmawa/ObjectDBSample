@@ -64,7 +64,7 @@ println "call doner static method closure " + transferStaticMethod (" try this o
 MethodClosure transferInstanceMethod = Doner::donerInstanceMethod
 
 Doner tempDoner = new Doner (instanceNumber:100)
-Recipient tempRecipient  = new Recipient (instanceNumber:200)
+Recipient tempRecipient  = new Recipient (recipientNumber:200)
 transferInstanceMethod (tempDoner, "invoke instance method")
 //Closure clonedTransfer = transfer.clone()
 //WillsMethodClosure rehydrateTransfer = clonedTransfer.rehydrate(Recipient, Recipient, null )
@@ -79,13 +79,14 @@ rmc.registerStaticMethod('transferStaticMethod', {String s -> transferStaticMeth
 
 Closure rmclos = {String s ->
     def thisDelegate = delegate
-    Closure instanceMM = transferInstanceMethod
-    instanceMM (Doner, s.toUpperCase())}
-rmclos = mclos.rehydrate(tempRecipient, tempRecipient, null)
+    transferInstanceMethod (tempDoner, "inside recipient closure - invoke instance method against tempDoner")
+    Closure instanceMM = transferInstanceMethod//.rehydrate(delegate, tempRecipient, null)
+    println "in rmclos : " + instanceMM (tempDoner /*delegate*/, s.toUpperCase())
+}
+//rmclos = rmclos.rehydrate(tempRecipient, tempRecipient, null)
 
 //now transfer doner instance method to metaClass (before we create any recipients
-rmc.registerInstanceMethod('transferInstanceMethod', rmclos
-)
+rmc.registerInstanceMethod('transferInstanceMethod', rmclos)
 
 //call transfered static method
 //MethodClosure extra = Recipient::added
@@ -124,9 +125,10 @@ println mc2("hello2")
 
 
 Recipient recip1 = new Recipient(recipientNumber: 1)
+Recipient recip2 = new Recipient(recipientNumber: 2)
 
 MetaMethod transferredInstanceMM = recip1.metaClass.getMetaMethod('transferInstanceMethod', (Class[]) [String])
-transferredInstanceMM.invoke(recip1, "invoked a transferred Doner instance method in recipient")
+println "transferInstanceMethod mm invoked : " + transferredInstanceMM.invoke(recip1, "invoked a transferred Doner instance method in recipient")
 
 //try rehydrate from doner2 methodClsoure back to doner1
 //MethodClosure mc3 = mc2.rehydrate(doner1, doner1, null)
@@ -135,5 +137,11 @@ transferredInstanceMM.invoke(recip1, "invoked a transferred Doner instance metho
 List<MetaMethod> list = Doner.metaClass.methods.findAll {it.name.contains ("Method")}
 Map<String, MetaMethod> mmMap = list.collectEntries{new MapEntry (it.name, it)}
 //does work at instance level
-println mmMap['instanceMethod'].invoke (doner1, "invoke with doner1")
-println mmMap['instanceMethod'].invoke (doner2, "invoke with doner2")
+println mmMap['donerInstanceMethod'].invoke (doner1, "invoke with doner1")
+println mmMap['donerInstanceMethod'].invoke (doner2, "invoke with doner2")
+
+List<MetaMethod> recipList = Recipient.metaClass.methods.findAll {it.name.contains ("Method")}
+Map<String, MetaMethod> rmmMap = recipList.collectEntries{new MapEntry (it.name, it)}
+//does work at instance level
+println rmmMap['transferInstanceMethod'].invoke (recip1, "invoke with recip1")
+println rmmMap['transferInstanceMethod'].invoke (recip2, "invoke with recip2")
