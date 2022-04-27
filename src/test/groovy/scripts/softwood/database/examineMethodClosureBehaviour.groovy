@@ -108,6 +108,7 @@ Closure rmSaveClos = {args ->
 rmc.registerInstanceMethod('transferInstanceMethod', rmclos)
 rmc.registerInstanceMethod('save', rmSaveClos)
 
+
 //call transfered static method
 //MethodClosure extra = Recipient::added
 println "call dyn added : " + Recipient.added ("try this from transfer ")
@@ -168,3 +169,25 @@ println rmmMap['transferInstanceMethod'].invoke (recip2, "invoke with recip2")
 
 println " -- try dynamic save() on recipient instance -- "
 println recip1.save("instance save() method on recipient called, proxied to doner static save() ")
+
+//func to dynamically build metaClass method
+Closure buildORMFunction (recipient, String fname) {
+    MetaClass recipientMC = recipient.metaClass
+
+    Closure clos = {args ->
+        def thisDelegate = delegate
+        MethodClosure ormFunc = Doner::"doner_$fname"
+
+        def result = ormFunc (thisDelegate, args)
+        result
+    }
+    clos.delegate = recipient
+    clos
+}
+
+Recipient recip3 = new Recipient(recipientNumber: 3)
+String dynFname = 'save'
+Closure rmSaveClos3 = buildORMFunction(recip3, dynFname)
+
+rmc.registerInstanceMethod('save3', rmSaveClos3)
+println recip3.save3()
