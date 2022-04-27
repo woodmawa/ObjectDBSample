@@ -187,7 +187,6 @@ Closure buildORMFunction (recipient, String fname) {
 
 Recipient recip3 = new Recipient(recipientNumber: 3)
 String dynFname = 'save'
-Closure rmSaveClos3 = buildORMFunction(recip3, dynFname)
 
-rmc.registerInstanceMethod('save3', rmSaveClos3)
+rmc.registerInstanceMethod('save3', buildORMFunction(recip3, dynFname) )
 println recip3.save3()
