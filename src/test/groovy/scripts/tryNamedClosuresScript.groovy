@@ -14,7 +14,7 @@ Closure someClos = {it ->
     } else {
         Binding binding = getBinding()
 
-        nm = "'name' not defined use name from binding " + binding.getVariable('name')
+        nm = "property 'name' not defined for closure context ${owner.getClass()}"
     }
     println "'name' was $nm"
     println "\tclos called with arg [$it] (name:${-> nm}) (owner:$owner)"
@@ -30,6 +30,7 @@ Alt alt2 = new Alt(name:'named alt2')
 
 Closure alt1Clos = someClos.rehydrate(alt1,alt1, null)
 Closure alt2Clos = someClos.rehydrate(alt2,alt2,null)
+
 alt1Clos (1)
 alt2Clos (2)
 
