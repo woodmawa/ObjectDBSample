@@ -6,32 +6,29 @@ import org.codehaus.groovy.runtime.MethodClosure
 @InheritConstructors
 class NamedClosure<V> extends Closure<V> {
     String name
-    //def owner
 
-    NamedClosure (String closName, Closure clos) {
-        super (clos.clone())
+    NamedClosure (String closName, def context, Closure clos) {
+        //invoke super with owner as a rehydrated closure on new context object
+        //(owner, thisObject)
+        super (clos.rehydrate (context, context, null), context)
         super.maximumNumberOfParameters = clos.maximumNumberOfParameters
         super.parameterTypes = clos.parameterTypes
-        //Closure rehydrated = clos.rehydrate(this, this, null)
 
-        //this.owner = rehydrated
-        //println "NamedClosure constructor, owner:${this.getOwner()} "
         name = closName
         this
     }
 
-    //have to do 1 extra redirect to call to function
+    //have to do 1 extra redirect to call original anonymous function
     def doCall (args) {
-        Closure self = owner
-
-        println "doCall(),  call self "
-        self.call (args)
-
-        Closure newSelf = self.rehydrate(this, this, null)
-
-        println "doCall(),  call newSelf "
-
-        newSelf.call(args)
+        Closure  self = owner
+        if (owner instanceof MethodClosure) {
+            MethodClosure mc = owner
+            mc.
+            println "calling method closure "
+        } else if (args)
+            self (args)
+        else
+            self()
     }
 
 }
