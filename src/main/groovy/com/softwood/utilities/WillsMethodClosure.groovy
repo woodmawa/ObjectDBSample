@@ -6,10 +6,11 @@ import org.codehaus.groovy.runtime.MethodClosure
 class WillsMethodClosure extends Closure {
 
     private static final Class[] EMPTY_CLASS_ARRAY = new Class[0]
-    private String methodName
-    private Class definingClass
-    private def methodClosureCalleeInstance
-    private String methodClosureCalleeMethodName
+    protected String methodName
+    protected Class definingClass
+    protected def methodClosureCalleeInstance
+    protected String methodClosureCalleeMethodName
+    //protected boolean isStatic = methodClosure.
 
     /*WillsMethodClosure(Object owner, String name) {
         super(owner)
@@ -68,6 +69,7 @@ class WillsMethodClosure extends Closure {
             //return InvokerHelper.invokeMethod(owner, methodName, arguments)
         } else {
             println "doCall ($reducedArgs), on $definingClass using $methodName()"
+            InvokerHelper.invokeStaticMethod()
             return InvokerHelper.invokeMethod(methodClosureCalleeInstance, methodClosureCalleeMethodName, *reducedArgs)
         }
     }
