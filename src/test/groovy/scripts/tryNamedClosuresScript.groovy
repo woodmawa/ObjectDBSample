@@ -22,7 +22,7 @@ Alt alt1 = new Alt(name:'named alt1')
 Alt alt2 = new Alt(name:'named alt2')
 
 
-//rehydrate closure someClosure with new owner and delegates 
+//rehydrate someClosure with new owner and delegates
 Closure alt1Clos = someClos.rehydrate(alt1,alt1, null)
 Closure alt2Clos = someClos.rehydrate(alt2,alt2,null)
 
