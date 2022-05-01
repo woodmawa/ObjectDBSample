@@ -22,6 +22,7 @@ Alt alt1 = new Alt(name:'named alt1')
 Alt alt2 = new Alt(name:'named alt2')
 
 
+//rehydrate closure someClosure with new owner and delegates 
 Closure alt1Clos = someClos.rehydrate(alt1,alt1, null)
 Closure alt2Clos = someClos.rehydrate(alt2,alt2,null)
 
@@ -31,8 +32,4 @@ alt1Clos (1)
 print "call of closure with alt2 as context, with 2 >> "
 alt2Clos (2)
 
-/*
-NamedClosure nc = ['will', someClos]
-print "then invoke named closure with 2 >> "
-nc(2)
-*/
+
