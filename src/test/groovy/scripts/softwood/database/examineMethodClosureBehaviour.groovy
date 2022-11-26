@@ -33,6 +33,12 @@ class Doner {
         "instance method() of Doner ($this) called with arg [$arg]"
     }
 
+    //wrapped by entity class metaClass extension
+    static def doner_save (delegate, args) {
+        println "static doner save() received delegate $delegate, and args list [$args]"
+        "save() returned : OK"
+    }
+
     String toString () {
         "Doner [doner inst num : $instanceNumber]"
     }
@@ -85,8 +91,23 @@ Closure rmclos = {String s ->
 }
 //rmclos = rmclos.rehydrate(tempRecipient, tempRecipient, null)
 
+Closure rmSaveClos = {args ->
+    def thisDelegate = delegate
+    MethodClosure saveInstanceMethod = Doner::doner_save
+    if (args.size() > 1) {
+        //got some sort of array of args here
+    } else {
+        //got one param
+    }
+
+    def result = saveInstanceMethod (thisDelegate, args)
+    result
+}
+
 //now transfer doner instance method to metaClass (before we create any recipients
 rmc.registerInstanceMethod('transferInstanceMethod', rmclos)
+rmc.registerInstanceMethod('save', rmSaveClos)
+
 
 //call transfered static method
 //MethodClosure extra = Recipient::added
@@ -145,3 +166,27 @@ Map<String, MetaMethod> rmmMap = recipList.collectEntries{new MapEntry (it.name,
 //does work at instance level
 println rmmMap['transferInstanceMethod'].invoke (recip1, "invoke with recip1")
 println rmmMap['transferInstanceMethod'].invoke (recip2, "invoke with recip2")
+
+println " -- try dynamic save() on recipient instance -- "
+println recip1.save("instance save() method on recipient called, proxied to doner static save() ")
+
+//func to dynamically build metaClass method
+Closure buildORMFunction (recipient, String fname) {
+    MetaClass recipientMC = recipient.metaClass
+
+    Closure clos = {args ->
+        def thisDelegate = delegate
+        MethodClosure ormFunc = Doner::"doner_$fname"
+
+        def result = ormFunc (thisDelegate, args)
+        result
+    }
+    clos.delegate = recipient
+    clos
+}
+
+Recipient recip3 = new Recipient(recipientNumber: 3)
+String dynFname = 'save'
+
+rmc.registerInstanceMethod('save3', buildORMFunction(recip3, dynFname) )
+println recip3.save3()
